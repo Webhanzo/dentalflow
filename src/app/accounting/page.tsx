@@ -7,13 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line, LineChart } from "recharts";
 import { accounting } from "@/lib/data";
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const currencyFormatter = new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' });
 
 export default function AccountingPage() {
   return (
     <DashboardLayout>
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Accounting Overview</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">نظرة عامة على المحاسبة</h1>
       </div>
 
       <Tabs defaultValue={accounting.clinics[0].clinic_id} className="w-full">
@@ -29,7 +29,7 @@ export default function AccountingPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
               <Card className="lg:col-span-7">
                 <CardHeader>
-                  <CardTitle>{clinic.name} - Financial Summary</CardTitle>
+                  <CardTitle>{clinic.name} - ملخص مالي</CardTitle>
                 </CardHeader>
                 <CardContent className="pl-2">
                   <ResponsiveContainer width="100%" height={350}>
@@ -41,11 +41,11 @@ export default function AccountingPage() {
                       }))}
                     >
                       <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => currencyFormatter.format(value).slice(0, -3)+'k'}/>
+                      <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => currencyFormatter.format(value).slice(0, -3)+' ألف'}/>
                       <Tooltip formatter={(value: number) => currencyFormatter.format(value)} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
                       <Legend />
-                      <Line type="monotone" dataKey="income" stroke="hsl(var(--chart-1))" activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="expenses" stroke="hsl(var(--chart-2))" />
+                      <Line type="monotone" dataKey="income" name="الإيرادات" stroke="hsl(var(--chart-1))" activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="expenses" name="النفقات" stroke="hsl(var(--chart-2))" />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -53,16 +53,16 @@ export default function AccountingPage() {
 
               <Card className="lg:col-span-4">
                 <CardHeader>
-                  <CardTitle>Income Breakdown</CardTitle>
-                  <CardDescription>Total: {currencyFormatter.format(clinic.income.total)}</CardDescription>
+                  <CardTitle>تفاصيل الإيرادات</CardTitle>
+                  <CardDescription>الإجمالي: {currencyFormatter.format(clinic.income.total)}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>المصدر</TableHead>
+                        <TableHead className="text-right">المبلغ</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -80,16 +80,16 @@ export default function AccountingPage() {
 
               <Card className="lg:col-span-3">
                 <CardHeader>
-                  <CardTitle>Expense Breakdown</CardTitle>
-                  <CardDescription>Total: {currencyFormatter.format(clinic.expenses.total)}</CardDescription>
+                  <CardTitle>تفاصيل النفقات</CardTitle>
+                  <CardDescription>الإجمالي: {currencyFormatter.format(clinic.expenses.total)}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>الفئة</TableHead>
+                        <TableHead className="text-right">المبلغ</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

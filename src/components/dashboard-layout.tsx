@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 className="shrink-0 md:hidden"
               >
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
+                <span className="sr-only">تبديل قائمة التنقل</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
@@ -58,21 +58,21 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                   <AvatarImage src="https://placehold.co/100x100.png" alt="Dr. Aisha" data-ai-hint="person portrait" />
                   <AvatarFallback>AK</AvatarFallback>
                 </Avatar>
-                <span className="sr-only">Toggle user menu</span>
+                <span className="sr-only">تبديل قائمة المستخدم</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Dr. Aisha</DropdownMenuLabel>
+              <DropdownMenuLabel>د. عائشة</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <User className="ml-2 h-4 w-4" />
+                <span>الملف الشخصي</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <Link href="/">
                 <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
               </Link>
             </DropdownMenuContent>

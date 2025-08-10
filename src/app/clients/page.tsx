@@ -29,34 +29,34 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
-          <DialogTitle>Client Profile</DialogTitle>
+          <DialogTitle>ملف العميل</DialogTitle>
           <DialogDescription>
-            Detailed information for {client.first_name} {client.last_name}.
+            معلومات مفصلة لـ {client.first_name} {client.last_name}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <Card>
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <InfoField label="Full Name" value={`${client.first_name} ${client.last_name}`} />
-                <InfoField label="Email" value={client.contact_info.email} />
-                <InfoField label="Phone" value={client.contact_info.phone} />
-                <InfoField label="Address" value={client.contact_info.address} />
+                <InfoField label="الاسم الكامل" value={`${client.first_name} ${client.last_name}`} />
+                <InfoField label="البريد الإلكتروني" value={client.contact_info.email} />
+                <InfoField label="الهاتف" value={client.contact_info.phone} />
+                <InfoField label="العنوان" value={client.contact_info.address} />
               </div>
             </CardContent>
           </Card>
           
           <div>
-            <h3 className="text-lg font-semibold mb-2">Treatment History</h3>
+            <h3 className="text-lg font-semibold mb-2">تاريخ العلاج</h3>
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Procedure</TableHead>
-                      <TableHead>Dentist ID</TableHead>
-                      <TableHead>Notes</TableHead>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>الإجراء</TableHead>
+                      <TableHead>معرف طبيب الأسنان</TableHead>
+                      <TableHead>ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -75,16 +75,16 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-2">Payment Details</h3>
+            <h3 className="text-lg font-semibold mb-2">تفاصيل الدفع</h3>
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>المبلغ</TableHead>
+                      <TableHead>الطريقة</TableHead>
+                      <TableHead>الحالة</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -93,7 +93,7 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
                         <TableCell>{payment.date}</TableCell>
                         <TableCell>${payment.amount.toFixed(2)}</TableCell>
                         <TableCell>{payment.method}</TableCell>
-                        <TableCell><Badge className="capitalize" variant={payment.status === 'paid' ? 'default' : 'secondary'}>{payment.status}</Badge></TableCell>
+                        <TableCell><Badge className="capitalize" variant={payment.status === 'paid' ? 'default' : 'secondary'}>{payment.status === 'paid' ? 'مدفوع' : 'معلق'}</Badge></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -118,12 +118,12 @@ export default function ClientsPage() {
     <DashboardLayout>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold md:text-2xl">Client Management</h1>
-          <p className="text-muted-foreground">View and manage client profiles.</p>
+          <h1 className="text-lg font-semibold md:text-2xl">إدارة العملاء</h1>
+          <p className="text-muted-foreground">عرض وإدارة ملفات العملاء.</p>
         </div>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Client
+          <PlusCircle className="ml-2 h-4 w-4" />
+          إضافة عميل
         </Button>
       </div>
 
@@ -132,11 +132,11 @@ export default function ClientsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Phone</TableHead>
-                <TableHead>Last Visit</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>الاسم</TableHead>
+                <TableHead className="hidden md:table-cell">البريد الإلكتروني</TableHead>
+                <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                <TableHead>آخر زيارة</TableHead>
+                <TableHead><span className="sr-only">الإجراءات</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -157,7 +157,7 @@ export default function ClientsPage() {
                   <TableCell>
                     <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleViewProfile(client) }}>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
+                      <span className="sr-only">فتح القائمة</span>
                     </Button>
                   </TableCell>
                 </TableRow>

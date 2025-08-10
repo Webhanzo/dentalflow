@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, Users, User, DollarSign } from "lucide-react";
 
 const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/employees", label: "Employees", icon: Users },
-  { href: "/clients", label: "Clients", icon: User },
-  { href: "/accounting", label: "Accounting", icon: DollarSign },
+  { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/employees", label: "الموظفون", icon: Users },
+  { href: "/clients", label: "العملاء", icon: User },
+  { href: "/accounting", label: "المحاسبة", icon: DollarSign },
 ];
 
 export function NavMenu() {

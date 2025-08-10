@@ -22,12 +22,12 @@ export default function EmployeesPage() {
     <DashboardLayout>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold md:text-2xl">Employee Management</h1>
-          <p className="text-muted-foreground">Manage your clinic's staff members.</p>
+          <h1 className="text-lg font-semibold md:text-2xl">إدارة الموظفين</h1>
+          <p className="text-muted-foreground">إدارة الموظفين في عيادتك.</p>
         </div>
         <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Employee
+          <PlusCircle className="ml-2 h-4 w-4" />
+          إضافة موظف
         </Button>
       </div>
 
@@ -36,11 +36,11 @@ export default function EmployeesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Phone</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>الاسم</TableHead>
+                <TableHead className="hidden md:table-cell">البريد الإلكتروني</TableHead>
+                <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                <TableHead>الدور</TableHead>
+                <TableHead><span className="sr-only">الإجراءات</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -63,20 +63,25 @@ export default function EmployeesPage() {
                   <TableCell className="hidden md:table-cell">{employee.contact_info.email}</TableCell>
                   <TableCell className="hidden md:table-cell">{employee.contact_info.phone}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">{employee.role}</Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {employee.role === 'dentist' && 'طبيب أسنان'}
+                      {employee.role === 'hygienist' && 'أخصائي صحة أسنان'}
+                      {employee.role === 'receptionist' && 'موظف استقبال'}
+                      {employee.role === 'admin' && 'مدير'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">فتح القائمة</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete</DropdownMenuItem>
+                        <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
+                        <DropdownMenuItem>تعديل</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">حذف</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -90,46 +95,46 @@ export default function EmployeesPage() {
       <Dialog open={isAddEmployeeDialogOpen} onOpenChange={setIsAddEmployeeDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Employee</DialogTitle>
+            <DialogTitle>إضافة موظف جديد</DialogTitle>
             <DialogDescription>
-              Fill in the details below to add a new staff member to your team.
+              املأ التفاصيل أدناه لإضافة موظف جديد إلى فريقك.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="first-name" className="text-right">First Name</Label>
+              <Label htmlFor="first-name" className="text-right">الاسم الأول</Label>
               <Input id="first-name" className="col-span-3" />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="last-name" className="text-right">Last Name</Label>
+              <Label htmlFor="last-name" className="text-right">الاسم الأخير</Label>
               <Input id="last-name" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">Email</Label>
+              <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
               <Input id="email" type="email" className="col-span-3" />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">Phone</Label>
+              <Label htmlFor="phone" className="text-right">الهاتف</Label>
               <Input id="phone" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">Role</Label>
+              <Label htmlFor="role" className="text-right">الدور</Label>
                <Select>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder="اختر دورًا" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dentist">Dentist</SelectItem>
-                  <SelectItem value="hygienist">Hygienist</SelectItem>
-                  <SelectItem value="receptionist">Receptionist</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="dentist">طبيب أسنان</SelectItem>
+                  <SelectItem value="hygienist">أخصائي صحة أسنان</SelectItem>
+                  <SelectItem value="receptionist">موظف استقبال</SelectItem>
+                  <SelectItem value="admin">مدير</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddEmployeeDialogOpen(false)}>Cancel</Button>
-            <Button type="submit">Save Employee</Button>
+            <Button variant="outline" onClick={() => setIsAddEmployeeDialogOpen(false)}>إلغاء</Button>
+            <Button type="submit">حفظ الموظف</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -14,55 +14,55 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">لوحة التحكم</h1>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي المرضى</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{clients.length}</div>
-            <p className="text-xs text-muted-foreground">+2 since last month</p>
+            <p className="text-xs text-muted-foreground">+2 منذ الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Appointments Today</CardTitle>
+            <CardTitle className="text-sm font-medium">مواعيد اليوم</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">+3 from yesterday</p>
+            <p className="text-xs text-muted-foreground">+3 عن أمس</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">الإيرادات الشهرية</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$17,000</div>
-            <p className="text-xs text-muted-foreground">+12.5% from last month</p>
+            <p className="text-xs text-muted-foreground">+12.5% عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">المدفوعات المعلقة</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$800.00</div>
-            <p className="text-xs text-muted-foreground">1 client with outstanding balance</p>
+            <p className="text-xs text-muted-foreground">عميل واحد برصيد مستحق</p>
           </CardContent>
         </Card>
       </div>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Clinic Revenue Overview</CardTitle>
-            <CardDescription>Revenue for Main St Dental in the last 5 months.</CardDescription>
+            <CardTitle>نظرة عامة على إيرادات العيادة</CardTitle>
+            <CardDescription>إيرادات عيادة الشارع الرئيسي في آخر 5 أشهر.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
              <ResponsiveContainer width="100%" height={350}>
@@ -94,15 +94,15 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Recent Patient Activity</CardTitle>
+            <CardTitle>نشاط المرضى الأخير</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Procedure</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead>الإجراء</TableHead>
+                  <TableHead>الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -116,7 +116,7 @@ export default function DashboardPage() {
                       <TableCell>{treatment.procedure}</TableCell>
                        <TableCell>
                         <Badge variant={client.payment_details[index]?.status === 'paid' ? 'default' : 'secondary'} className={client.payment_details[index]?.status === 'paid' ? 'bg-primary/20 text-primary-foreground' : ''}>
-                          {client.payment_details[index]?.status || 'N/A'}
+                          {client.payment_details[index]?.status === 'paid' ? 'مدفوع' : 'معلق'}
                         </Badge>
                       </TableCell>
                     </TableRow>
