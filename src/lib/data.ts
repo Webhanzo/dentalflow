@@ -45,18 +45,18 @@ type Employee = (typeof employees)[0];
 
 
 export function addEmployee(employee: Employee) {
-  employees.push(employee);
+  employees = [...employees, employee];
+  return employees;
 }
 
 export function updateEmployee(updatedEmployee: Employee) {
-  const index = employees.findIndex(e => e.employee_id === updatedEmployee.employee_id);
-  if (index !== -1) {
-    employees[index] = updatedEmployee;
-  }
+  employees = employees.map(e => e.employee_id === updatedEmployee.employee_id ? updatedEmployee : e);
+  return employees;
 }
 
 export function deleteEmployee(employeeId: string) {
   employees = employees.filter(e => e.employee_id !== employeeId);
+  return employees;
 }
 
 export const clients = [

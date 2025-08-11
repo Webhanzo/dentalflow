@@ -50,7 +50,7 @@ export default function EmployeesPage() {
   };
 
   const handleSaveEmployee = () => {
-    const newIdNumber = Math.max(...employees.map(e => parseInt(e.employee_id.replace('EMP', ''))), 0) + 1;
+    const newIdNumber = (employees.length > 0 ? Math.max(...employees.map(e => parseInt(e.employee_id.replace('EMP', '')))) : 0) + 1;
     const employeeToAdd: Employee = {
       employee_id: `EMP${String(newIdNumber).padStart(3, '0')}`,
       first_name: newEmployee.first_name,
@@ -65,30 +65,30 @@ export default function EmployeesPage() {
       avatar: "https://placehold.co/100x100.png",
     };
     
-    addEmployee(employeeToAdd);
-    setEmployees(prev => [...prev, employeeToAdd]);
+    const updatedEmployees = addEmployee(employeeToAdd);
+    setEmployees(updatedEmployees);
     
     setIsAddEmployeeDialogOpen(false);
     setNewEmployee({ first_name: "", last_name: "", email: "", phone: "", role: "", salary: "" });
   };
   
   const handleEditClick = (employee: Employee) => {
-    setSelectedEmployee(employee);
+    setSelectedEmployee(JSON.parse(JSON.stringify(employee)));
     setIsEditEmployeeDialogOpen(true);
   }
 
   const handleUpdateEmployee = () => {
     if(selectedEmployee) {
-      updateEmployee(selectedEmployee);
-      setEmployees(employees.map(e => e.employee_id === selectedEmployee.employee_id ? selectedEmployee : e));
+      const updatedEmployees = updateEmployee(selectedEmployee);
+      setEmployees(updatedEmployees);
       setIsEditEmployeeDialogOpen(false);
       setSelectedEmployee(null);
     }
   }
 
   const handleDeleteEmployee = (employeeId: string) => {
-    deleteEmployee(employeeId);
-    setEmployees(employees.filter(e => e.employee_id !== employeeId));
+    const updatedEmployees = deleteEmployee(employeeId);
+    setEmployees(updatedEmployees);
   }
 
 
