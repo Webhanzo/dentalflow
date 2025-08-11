@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
@@ -28,34 +28,42 @@ export default function AccountingPage() {
 
   const aggregateFinancials = (clinicId: string) => {
     const clinic = accounting.clinics.find(c => c.clinic_id === clinicId);
-    if (!clinic) return { incomeData: [], expenseData: [], totalIncome: 0, totalExpenses: 0, netProfit: 0, chartData: [] };
+    if (!clinic) return { incomeData: [], expenseData: [], totalIncome: 0, totalExpenses: 0, netProfit: 0, chartData: [], cashFlow: {}, balanceSheet: {} };
 
     const employeeSalaries = employees
       .filter(e => e.clinic_ids.includes(clinicId))
       .reduce((total, e) => total + e.salary, 0);
 
-    const clientPayments = clients.flatMap(c => c.payment_details)
+    const clientPaymentsPaid = clients
+      .flatMap(c => c.payment_details)
       .filter(p => p.status === 'paid')
+      .reduce((total, p) => total + p.amount, 0);
+      
+    const clientPaymentsPending = clients
+      .flatMap(c => c.payment_details)
+      .filter(p => p.status === 'pending')
       .reduce((total, p) => total + p.amount, 0);
 
     const monthlyExpenses = clinic.expenses.by_date.map(exp => ({...exp}));
+    const totalManualExpenses = monthlyExpenses.reduce((sum, exp) => sum + exp.amount, 0);
     monthlyExpenses.push({ date: "رواتب الموظفين", amount: employeeSalaries, category: "رواتب" });
 
     const monthlyIncome = clinic.income.by_date.map(inc => ({...inc}));
+    const totalManualIncome = monthlyIncome.reduce((sum, inc) => sum + inc.amount, 0);
+
     if (monthlyIncome.length > 0) {
-        // For simplicity, adding all client payments to the latest month's income.
-        const lastMonthIncomeIndex = monthlyIncome.findIndex(inc => inc.source === "مدفوعات العملاء");
-        if(lastMonthIncomeIndex > -1){
-            monthlyIncome[lastMonthIncomeIndex].amount = clientPayments;
+        const clientPaymentsIndex = monthlyIncome.findIndex(inc => inc.source === "مدفوعات العملاء");
+        if(clientPaymentsIndex > -1){
+            monthlyIncome[clientPaymentsIndex].amount = clientPaymentsPaid;
         } else {
-             monthlyIncome.push({ date: "مدفوعات العملاء", amount: clientPayments, source: "مدفوعات العملاء" });
+             monthlyIncome.push({ date: "مدفوعات العملاء", amount: clientPaymentsPaid, source: "مدفوعات العملاء" });
         }
     } else {
-         monthlyIncome.push({ date: "مدفوعات العملاء", amount: clientPayments, source: "مدفوعات العملاء" });
+         monthlyIncome.push({ date: "مدفوعات العملاء", amount: clientPaymentsPaid, source: "مدفوعات العملاء" });
     }
 
-    const totalExpenses = monthlyExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const totalIncome = monthlyIncome.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalExpenses = totalManualExpenses + employeeSalaries;
+    const totalIncome = totalManualIncome + clientPaymentsPaid;
     const netProfit = totalIncome - totalExpenses;
 
     const allDates = [...new Set([...clinic.income.by_date.map(i => i.date), ...clinic.expenses.by_date.map(e => e.date)])].sort();
@@ -70,12 +78,11 @@ export default function AccountingPage() {
             .reduce((sum, e) => sum + e.amount, 0);
         
         let totalIncomeForDate = incomeForDate;
-        // Distribute client payments and salaries for chart view
-        if(date === "مدفوعات العملاء") totalIncomeForDate += clientPayments;
+        if(date === "مدفوعات العملاء") totalIncomeForDate += clientPaymentsPaid;
         
         let totalExpenseForDate = expenseForDate;
         if(date === "رواتب الموظفين") totalExpenseForDate += employeeSalaries;
-        else if (date.includes("2024")) { // Distribute salary over months for chart
+        else if (date.includes("2024")) {
              totalExpenseForDate += (employeeSalaries / allDates.filter(d => d.includes("2024")).length);
         }
 
@@ -86,6 +93,38 @@ export default function AccountingPage() {
         }
     });
 
+    const cashFlowFromOperations = netProfit; // Simplified for now
+    const cashFlow = {
+        fromOperations: cashFlowFromOperations,
+        netChangeInCash: cashFlowFromOperations, // Simplified
+    };
+
+    const assets = {
+        cash: clinic.financials.assets.cash + cashFlow.netChangeInCash,
+        accounts_receivable: clientPaymentsPending,
+        equipment: clinic.financials.assets.equipment,
+    }
+    const totalAssets = assets.cash + assets.accounts_receivable + assets.equipment;
+
+    const liabilities = {
+        accounts_payable: clinic.financials.liabilities.accounts_payable,
+    };
+    const totalLiabilities = liabilities.accounts_payable;
+    
+    const equity = {
+      owner_investment: clinic.financials.equity.owner_investment,
+      retained_earnings: netProfit, // Simplified
+    }
+    const totalEquity = equity.owner_investment + equity.retained_earnings;
+
+    const balanceSheet = {
+        assets,
+        liabilities,
+        equity,
+        totalAssets,
+        totalLiabilitiesAndEquity: totalLiabilities + totalEquity,
+    }
+
     return {
       incomeData: monthlyIncome,
       expenseData: monthlyExpenses,
@@ -93,6 +132,8 @@ export default function AccountingPage() {
       totalExpenses,
       netProfit,
       chartData,
+      cashFlow,
+      balanceSheet,
     }
   }
 
@@ -139,7 +180,7 @@ export default function AccountingPage() {
           ))}
         </TabsList>
         {accounting.clinics.map(clinic => {
-            const { incomeData, expenseData, totalIncome, totalExpenses, netProfit, chartData } = aggregateFinancials(clinic.clinic_id);
+            const { incomeData, expenseData, totalIncome, totalExpenses, netProfit, chartData, cashFlow, balanceSheet } = aggregateFinancials(clinic.clinic_id);
             return (
               <TabsContent key={clinic.clinic_id} value={clinic.clinic_id} className="mt-4">
                  <div className="flex gap-2 mb-4">
@@ -303,6 +344,89 @@ export default function AccountingPage() {
                     </CardContent>
                   </Card>
 
+                   <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle>قائمة التدفق النقدي</CardTitle>
+                            <CardDescription>ملخص التدفقات النقدية الداخلة والخارجة</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell>صافي الربح</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(netProfit)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>التدفق النقدي من الأنشطة التشغيلية</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(cashFlow.fromOperations)}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow className="font-bold">
+                                        <TableHead>صافي التغير في النقد</TableHead>
+                                        <TableHead className="text-right">{currencyFormatter.format(cashFlow.netChangeInCash)}</TableHead>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-4">
+                        <CardHeader>
+                            <CardTitle>قائمة المركز المالي</CardTitle>
+                            <CardDescription>لمحة عن أصول الشركة وخصومها وحقوق الملكية</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <h4 className="font-semibold mb-2">الأصول</h4>
+                            <Table>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell>النقد</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.assets.cash)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>حسابات القبض (العملاء)</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.assets.accounts_receivable)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>المعدات</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.assets.equipment)}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                                 <TableFooter>
+                                    <TableRow className="font-bold">
+                                        <TableHead>مجموع الأصول</TableHead>
+                                        <TableHead className="text-right">{currencyFormatter.format(balanceSheet.totalAssets)}</TableHead>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                             <h4 className="font-semibold mt-4 mb-2">الخصوم وحقوق الملكية</h4>
+                             <Table>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell>حسابات الدفع (الموردون)</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.liabilities.accounts_payable)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>استثمار المالك</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.equity.owner_investment)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>الأرباح المحتجزة</TableCell>
+                                        <TableCell className="text-right">{currencyFormatter.format(balanceSheet.equity.retained_earnings)}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                                 <TableFooter>
+                                    <TableRow className="font-bold">
+                                        <TableHead>مجموع الخصوم وحقوق الملكية</TableHead>
+                                        <TableHead className="text-right">{currencyFormatter.format(balanceSheet.totalLiabilitiesAndEquity)}</TableHead>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </CardContent>
+                    </Card>
+
+
                 </div>
               </TabsContent>
             )
@@ -311,5 +435,3 @@ export default function AccountingPage() {
     </DashboardLayout>
   );
 }
-
-    

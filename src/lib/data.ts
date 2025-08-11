@@ -191,6 +191,19 @@ let accountingData = {
           { date: "مايو 2024", amount: 1200, category: "خدمات" },
         ],
       },
+       financials: {
+        assets: {
+          cash: 15000,
+          accounts_receivable: 250, // from Jane Smith
+          equipment: 5000,
+        },
+        liabilities: {
+          accounts_payable: 500, // For supplies
+        },
+        equity: {
+          owner_investment: 20000,
+        }
+      }
     },
     {
       clinic_id: "C02",
@@ -215,6 +228,19 @@ let accountingData = {
           { date: "مايو 2024", amount: 1000, category: "خدمات" },
         ],
       },
+      financials: {
+        assets: {
+          cash: 10000,
+          accounts_receivable: 0,
+          equipment: 3000,
+        },
+        liabilities: {
+          accounts_payable: 300,
+        },
+        equity: {
+          owner_investment: 15000,
+        }
+      }
     },
   ],
 };
