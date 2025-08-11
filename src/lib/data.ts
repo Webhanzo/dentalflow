@@ -108,6 +108,34 @@ export function deleteClient(clientId: string) {
     return clients;
 }
 
+export let appointments = [
+    {
+        appointment_id: 'APP001',
+        client_id: 'CLI001',
+        dentist_id: 'EMP001',
+        date: '2024-07-28',
+        time: '10:00',
+        procedure: 'فحص دوري',
+        status: 'scheduled',
+    },
+    {
+        appointment_id: 'APP002',
+        client_id: 'CLI002',
+        dentist_id: 'EMP001',
+        date: '2024-07-28',
+        time: '11:00',
+        procedure: 'تنظيف',
+        status: 'scheduled',
+    },
+];
+
+export type Appointment = (typeof appointments)[0];
+
+export function addAppointment(appointment: Appointment) {
+    appointments = [...appointments, appointment];
+    return appointments;
+}
+
 
 export const accounting = {
   clinics: [

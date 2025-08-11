@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, User, DollarSign } from "lucide-react";
+import { LayoutDashboard, Users, User, DollarSign, Calendar } from "lucide-react";
 
 const menuItems = [
   { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/appointments", label: "المواعيد", icon: Calendar },
   { href: "/employees", label: "الموظفون", icon: Users },
   { href: "/clients", label: "العملاء", icon: User },
   { href: "/accounting", label: "المحاسبة", icon: DollarSign },
@@ -18,7 +19,7 @@ export function NavMenu() {
   return (
     <nav className="grid items-start gap-2 px-2 text-sm font-medium lg:px-4">
       {menuItems.map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href;
+        const isActive = pathname.startsWith(href);
         return (
           <Link
             key={href}

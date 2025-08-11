@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
@@ -9,21 +9,101 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Edit, Save, X, Plus } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Edit, Save, X, Plus, CalendarPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { clients as initialClients, addClient, updateClient } from "@/lib/data";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { clients as initialClients, addClient, updateClient, appointments, addAppointment } from "@/lib/data";
+import type { Appointment } from "@/lib/data";
 
 type Client = typeof initialClients[0];
 type Treatment = Client['treatment_history'][0];
 type Payment = Client['payment_details'][0];
 
-function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onClientUpdate: (client: Client) => void }) {
+function BookAppointmentDialog({ client, open, onOpenChange, onAppointmentBooked }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onAppointmentBooked: (app: Appointment) => void}) {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState("");
+  const [procedure, setProcedure] = useState("");
+
+  if (!client) return null;
+
+  const handleBookAppointment = () => {
+    if (date && time && procedure) {
+        const newAppointment: Appointment = {
+            appointment_id: `APP${String(Date.now()).slice(-4)}`,
+            client_id: client.client_id,
+            dentist_id: 'EMP001', // Placeholder
+            date: format(date, 'yyyy-MM-dd'),
+            time,
+            procedure,
+            status: 'scheduled',
+        };
+        onAppointmentBooked(newAppointment);
+        onOpenChange(false);
+        // Reset form
+        setDate(new Date());
+        setTime("");
+        setProcedure("");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>حجز موعد لـ {client.first_name}</DialogTitle>
+                <DialogDescription>
+                    اختر التاريخ والوقت والإجراء المطلوب.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="date" className="text-right">التاريخ</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                            variant={"outline"}
+                            className="col-span-3 justify-start text-left font-normal"
+                            >
+                            {date ? format(date, "PPP") : <span>اختر تاريخًا</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="time" className="text-right">الوقت</Label>
+                    <Input id="time" type="time" className="col-span-3" value={time} onChange={e => setTime(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="procedure" className="text-right">الإجراء</Label>
+                    <Input id="procedure" className="col-span-3" value={procedure} onChange={e => setProcedure(e.target.value)} placeholder="مثال: فحص دوري" />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
+                <Button onClick={handleBookAppointment}>تأكيد الحجز</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  )
+}
+
+function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate, onBookAppointment }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onClientUpdate: (client: Client) => void; onBookAppointment: () => void; }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editableClient, setEditableClient] = useState<Client | null>(JSON.parse(JSON.stringify(client)));
+  const [editableClient, setEditableClient] = useState<Client | null>(null);
 
   useEffect(() => {
     setEditableClient(client ? JSON.parse(JSON.stringify(client)) : null);
@@ -111,9 +191,13 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { c
                 معلومات مفصلة لـ {client.first_name} {client.last_name}.
               </DialogDescription>
             </div>
-            <div>
+            <div className="flex gap-2">
+                 <Button variant="outline" size="sm" onClick={onBookAppointment}>
+                    <CalendarPlus className="h-4 w-4 mr-2" />
+                    حجز موعد
+                </Button>
                 {isEditing ? (
-                  <div className="flex gap-2">
+                  <>
                     <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                       <X className="h-4 w-4 mr-2" />
                       إلغاء
@@ -122,7 +206,7 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { c
                       <Save className="h-4 w-4 mr-2" />
                       حفظ
                     </Button>
-                  </div>
+                  </>
                 ) : (
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Edit className="h-4 w-4 mr-2" />
@@ -228,8 +312,10 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { c
 
 export default function ClientsPage() {
   const [clients, setClients] = useState(initialClients);
+  const [allAppointments, setAllAppointments] = useState(appointments);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  const [isBookAppointmentDialogOpen, setIsBookAppointmentDialogOpen] = useState(false);
   
   const [newClient, setNewClient] = useState({
     first_name: "",
@@ -273,6 +359,11 @@ export default function ClientsPage() {
   const handleClientUpdate = (updatedClientData: Client) => {
     const updatedClients = updateClient(updatedClientData);
     setClients(updatedClients);
+  };
+  
+  const handleAppointmentBooked = (newAppointment: Appointment) => {
+    const updatedAppointments = addAppointment(newAppointment);
+    setAllAppointments(updatedAppointments);
   };
 
   const handleViewProfile = (client: Client) => {
@@ -337,7 +428,19 @@ export default function ClientsPage() {
         open={!!selectedClient} 
         onOpenChange={(open) => { if (!open) setSelectedClient(null) }} 
         onClientUpdate={handleClientUpdate}
+        onBookAppointment={() => {
+            if (selectedClient) {
+              setIsBookAppointmentDialogOpen(true);
+            }
+        }}
       />
+
+      <BookAppointmentDialog
+        client={selectedClient}
+        open={isBookAppointmentDialogOpen}
+        onOpenChange={setIsBookAppointmentDialogOpen}
+        onAppointmentBooked={handleAppointmentBooked}
+       />
 
       <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
         <DialogContent>
