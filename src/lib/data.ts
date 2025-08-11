@@ -1,4 +1,5 @@
 
+
 export let employees = [
   {
     employee_id: "EMP001",
@@ -153,8 +154,19 @@ export function updateAppointment(appointmentId: string, status: AppointmentStat
     return appointments;
 }
 
+export type Income = {
+    date: string;
+    amount: number;
+    source: string;
+};
 
-export const accounting = {
+export type Expense = {
+    date: string;
+    amount: number;
+    category: string;
+};
+
+let accountingData = {
   clinics: [
     {
       clinic_id: "C01",
@@ -206,3 +218,25 @@ export const accounting = {
     },
   ],
 };
+
+export let accounting = JSON.parse(JSON.stringify(accountingData));
+
+export function addIncome(clinicId: string, income: Income) {
+    const clinic = accounting.clinics.find(c => c.clinic_id === clinicId);
+    if(clinic) {
+        clinic.income.by_date.push(income);
+        clinic.income.total += income.amount;
+    }
+    return JSON.parse(JSON.stringify(accounting));
+}
+
+export function addExpense(clinicId: string, expense: Expense) {
+    const clinic = accounting.clinics.find(c => c.clinic_id === clinicId);
+    if(clinic) {
+        clinic.expenses.by_date.push(expense);
+        clinic.expenses.total += expense.amount;
+    }
+    return JSON.parse(JSON.stringify(accounting));
+}
+
+    
