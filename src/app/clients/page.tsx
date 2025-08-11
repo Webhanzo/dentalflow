@@ -19,7 +19,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { getClinics, getClients, addClient, updateClient, getAppointments, addAppointment } from "@/lib/data";
+import { getClinics, getClients, addClient, updateClient, getAppointments, addAppointment, getAllClients } from "@/lib/data";
 import type { Appointment, Client, Clinic } from "@/lib/data";
 
 type Treatment = Client['treatment_history'][0];
@@ -338,8 +338,13 @@ function ClientsTabContent({ clinic }: { clinic: Clinic }) {
     };
 
     const handleSaveClient = () => {
-        const totalClients = getClients().length;
-        const newIdNumber = totalClients + 1;
+        const allClients = getAllClients();
+        const maxId = allClients.reduce((max, c) => {
+            const idNum = parseInt(c.client_id.replace('CLI', ''));
+            return idNum > max ? idNum : max;
+        }, 0);
+        const newIdNumber = maxId + 1;
+        
         const clientToAdd: Client = {
             client_id: `CLI${String(newIdNumber).padStart(3, '0')}`,
             first_name: newClient.first_name,

@@ -349,6 +349,10 @@ export function getEmployees(clinicId?: string) {
     return deepClone(masterData.employees);
 }
 
+export function getAllClients() {
+    return deepClone(masterData.clients);
+}
+
 export function getClients(clinicId: string) {
     return deepClone(masterData.clients.filter(c => c.clinic_id === clinicId));
 }
@@ -438,4 +442,3 @@ export function addExpense(clinicId: string, expense: Expense) {
     }
     return getAccounting(clinicId);
 }
-
