@@ -7,12 +7,55 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { DollarSign, Users, Calendar, AlertCircle } from "lucide-react";
-import { getClinics, getDashboardData } from "@/lib/data";
+import { DollarSign, Users, Calendar, AlertCircle, PlusCircle, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { getClinics, getDashboardData, addClinic, updateClinic, deleteClinic } from "@/lib/data";
 import type { Clinic, Client, Accounting, Appointment } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
+
+function ClinicDialog({ open, onOpenChange, onSave, clinic }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (name: string) => void, clinic: Clinic | null }) {
+    const [name, setName] = useState('');
+
+    useEffect(() => {
+        if (clinic) {
+            setName(clinic.name);
+        } else {
+            setName('');
+        }
+    }, [clinic]);
+
+    const handleSave = () => {
+        if (name) {
+            onSave(name);
+            onOpenChange(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{clinic ? 'تعديل العيادة' : 'إضافة عيادة جديدة'}</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <Label htmlFor="clinic-name">اسم العيادة</Label>
+                    <Input id="clinic-name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
+                    <Button onClick={handleSave}>حفظ</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function DashboardTabContent({ clinic }: { clinic: Clinic }) {
   const [data, setData] = useState<{ clients: Client[], accounting?: Accounting, appointments: Appointment[] } | null>(null);
@@ -156,34 +199,115 @@ function DashboardTabContent({ clinic }: { clinic: Clinic }) {
 export default function DashboardPage() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [activeClinic, setActiveClinic] = useState<string>('');
+  const [isClinicDialogOpen, setIsClinicDialogOpen] = useState(false);
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
 
-  useEffect(() => {
+  const refreshClinics = () => {
     const allClinics = getClinics();
     setClinics(allClinics);
-    if (allClinics.length > 0) {
-      setActiveClinic(allClinics[0].clinic_id);
+    if (!allClinics.some(c => c.clinic_id === activeClinic) || !activeClinic) {
+        setActiveClinic(allClinics[0]?.clinic_id || '');
     }
+  };
+
+  useEffect(() => {
+    refreshClinics();
   }, []);
+
+  const handleAddClinic = () => {
+      setSelectedClinic(null);
+      setIsClinicDialogOpen(true);
+  }
+
+  const handleEditClinic = (clinic: Clinic) => {
+      setSelectedClinic(clinic);
+      setIsClinicDialogOpen(true);
+  }
+
+  const handleDeleteClinic = (clinicId: string) => {
+      deleteClinic(clinicId);
+      refreshClinics();
+  }
+
+  const handleSaveClinic = (name: string) => {
+      if (selectedClinic) {
+          updateClinic({ ...selectedClinic, name });
+      } else {
+          addClinic(name);
+      }
+      refreshClinics();
+      setIsClinicDialogOpen(false);
+      setSelectedClinic(null);
+  }
 
   if (clinics.length === 0) {
     return (
       <DashboardLayout>
-        <div>لا توجد عيادات. يرجى إضافة عيادة من قسم المحاسبة.</div>
+        <div className="text-center">
+            <h2 className="text-2xl font-bold">لا توجد عيادات</h2>
+            <p className="text-muted-foreground">ابدأ بإضافة عيادتك الأولى.</p>
+            <Button className="mt-4" onClick={handleAddClinic}>
+                <PlusCircle className="ml-2 h-4 w-4" />
+                إضافة عيادة
+            </Button>
+            <ClinicDialog open={isClinicDialogOpen} onOpenChange={setIsClinicDialogOpen} onSave={handleSaveClinic} clinic={null} />
+        </div>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="flex items-center">
+      <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">لوحة التحكم</h1>
+        <Button onClick={handleAddClinic}>
+            <PlusCircle className="ml-2 h-4 w-4" />
+            إضافة عيادة
+        </Button>
       </div>
-      <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} className="w-full">
+      <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} value={activeClinic} className="w-full">
         <TabsList>
           {clinics.map(clinic => (
-            <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
-              {clinic.name}
-            </TabsTrigger>
+            <div key={clinic.clinic_id} className="relative group">
+              <TabsTrigger value={clinic.clinic_id}>
+                {clinic.name}
+              </TabsTrigger>
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => handleEditClinic(clinic)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      <span>تعديل</span>
+                    </DropdownMenuItem>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                             <span>حذف</span>
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>هل أنت متأكد من حذف عيادة "{clinic.name}"؟</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف العيادة وجميع بياناتها المرتبطة بشكل دائم.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteClinic(clinic.clinic_id)}>
+                                نعم، حذف العيادة
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
           ))}
         </TabsList>
         {clinics.map(clinic => (
@@ -192,6 +316,8 @@ export default function DashboardPage() {
           </TabsContent>
         ))}
       </Tabs>
+      <ClinicDialog open={isClinicDialogOpen} onOpenChange={setIsClinicDialogOpen} onSave={handleSaveClinic} clinic={selectedClinic} />
     </DashboardLayout>
   );
 }
+

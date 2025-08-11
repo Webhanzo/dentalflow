@@ -291,7 +291,8 @@ export function getClinics() {
 }
 
 export function addClinic(name: string) {
-    const newId = `C${String(masterData.clinics.length + 1).padStart(2, '0')}`;
+    const newIdNumber = masterData.clinics.reduce((max, c) => Math.max(max, parseInt(c.clinic_id.replace('C', ''))), 0) + 1;
+    const newId = `C${String(newIdNumber).padStart(2, '0')}`;
     const newClinic: Clinic = { clinic_id: newId, name };
     masterData.clinics.push(newClinic);
     // Add default accounting data for the new clinic
@@ -305,19 +306,26 @@ export function addClinic(name: string) {
             equity: { owner_investment: 0 },
         }
     });
-    return deepClone(masterData);
+    return deepClone(masterData.clinics);
 }
+
+export function updateClinic(updatedClinic: Clinic) {
+    masterData.clinics = masterData.clinics.map(c => c.clinic_id === updatedClinic.clinic_id ? updatedClinic : c);
+    return deepClone(masterData.clinics);
+}
+
 
 export function deleteClinic(clinicId: string) {
     masterData.clinics = masterData.clinics.filter(c => c.clinic_id !== clinicId);
     masterData.employees = masterData.employees.map(e => ({
         ...e,
         clinic_ids: e.clinic_ids.filter(id => id !== clinicId),
-    })).filter(e => e.clinic_ids.length > 0);
+    }));
+    // Note: We don't filter out employees with no clinics, they just become unassigned.
     masterData.clients = masterData.clients.filter(c => c.clinic_id !== clinicId);
     masterData.appointments = masterData.appointments.filter(a => a.clinic_id !== clinicId);
     masterData.accounting = masterData.accounting.filter(acc => acc.clinic_id !== clinicId);
-    return deepClone(masterData);
+    return deepClone(masterData.clinics);
 }
 
 // --- Data Fetching by Clinic ---
@@ -430,3 +438,4 @@ export function addExpense(clinicId: string, expense: Expense) {
     }
     return getAccounting(clinicId);
 }
+

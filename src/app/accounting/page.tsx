@@ -341,70 +341,24 @@ function AccountingTabContent({ clinic }: { clinic: Clinic }) {
     )
 }
 
-function AddClinicDialog({ open, onOpenChange, onClinicAdded }: { open: boolean, onOpenChange: (open: boolean) => void, onClinicAdded: () => void }) {
-    const [name, setName] = useState("");
-
-    const handleAdd = () => {
-        if (name) {
-            addClinic(name);
-            onClinicAdded();
-            setName("");
-            onOpenChange(false);
-        }
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>إضافة عيادة جديدة</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <Label htmlFor="clinic-name">اسم العيادة</Label>
-                    <Input id="clinic-name" value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <DialogFooterComponent>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
-                    <Button onClick={handleAdd}>إضافة</Button>
-                </DialogFooterComponent>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function AccountingPage() {
     const [clinics, setClinics] = useState<Clinic[]>([]);
     const [activeClinic, setActiveClinic] = useState<string>('');
-    const [isAddClinicDialogOpen, setIsAddClinicDialogOpen] = useState(false);
-
-    const refreshClinics = () => {
+    
+    useEffect(() => {
         const allClinics = getClinics();
         setClinics(allClinics);
-        if (!allClinics.some(c => c.clinic_id === activeClinic)) {
-            setActiveClinic(allClinics[0]?.clinic_id || '');
+        if (allClinics.length > 0) {
+            setActiveClinic(allClinics[0].clinic_id);
         }
-    };
-
-    useEffect(() => {
-        refreshClinics();
     }, []);
-
-    const handleDeleteClinic = (clinicId: string) => {
-        deleteClinic(clinicId);
-        refreshClinics();
-    };
 
     if (clinics.length === 0) {
         return (
           <DashboardLayout>
             <div className="text-center">
                 <h2 className="text-2xl font-bold">لا توجد عيادات</h2>
-                <p className="text-muted-foreground">ابدأ بإضافة عيادتك الأولى.</p>
-                <Button className="mt-4" onClick={() => setIsAddClinicDialogOpen(true)}>
-                    <PlusCircle className="ml-2 h-4 w-4" />
-                    إضافة عيادة
-                </Button>
-                <AddClinicDialog open={isAddClinicDialogOpen} onOpenChange={setIsAddClinicDialogOpen} onClinicAdded={refreshClinics} />
+                <p className="text-muted-foreground">ابدأ بإضافة عيادتك الأولى من لوحة التحكم.</p>
             </div>
           </DashboardLayout>
         )
@@ -414,41 +368,14 @@ export default function AccountingPage() {
         <DashboardLayout>
             <div className="flex items-center justify-between">
                 <h1 className="text-lg font-semibold md:text-2xl">نظرة عامة على المحاسبة</h1>
-                <Button onClick={() => setIsAddClinicDialogOpen(true)}>
-                    <PlusCircle className="ml-2 h-4 w-4" />
-                    إضافة عيادة
-                </Button>
             </div>
 
-            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} className="w-full">
-                <TabsList className="relative">
+            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} value={activeClinic} className="w-full">
+                <TabsList>
                     {clinics.map(clinic => (
-                        <div key={clinic.clinic_id} className="relative group">
-                            <TabsTrigger value={clinic.clinic_id}>
-                                {clinic.name}
-                            </TabsTrigger>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <XIcon className="h-3 w-3" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>هل أنت متأكد من حذف عيادة "{clinic.name}"؟</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف العيادة وجميع بياناتها المرتبطة بشكل دائم.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteClinic(clinic.clinic_id)}>
-                                            نعم، حذف العيادة
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
+                        <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
+                            {clinic.name}
+                        </TabsTrigger>
                     ))}
                 </TabsList>
                 {clinics.map(clinic => (
@@ -457,7 +384,7 @@ export default function AccountingPage() {
                     </TabsContent>
                 ))}
             </Tabs>
-             <AddClinicDialog open={isAddClinicDialogOpen} onOpenChange={setIsAddClinicDialogOpen} onClinicAdded={refreshClinics} />
         </DashboardLayout>
     );
 }
+
