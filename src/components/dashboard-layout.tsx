@@ -1,3 +1,4 @@
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,15 +57,15 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               <Button variant="secondary" size="icon" className="rounded-full">
                 <Avatar>
                   <AvatarImage src="https://placehold.co/100x100.png" alt="Dr. Aisha" data-ai-hint="person portrait" />
-                  <AvatarFallback>AK</AvatarFallback>
+                  <AvatarFallback>DA</AvatarFallback>
                 </Avatar>
                 <span className="sr-only">تبديل قائمة المستخدم</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>د. عائشة</DropdownMenuLabel>
+              <DropdownMenuLabel>حسابي</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <User className="ml-2 h-4 w-4" />
                 <span>الملف الشخصي</span>
               </DropdownMenuItem>
@@ -85,3 +86,5 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+    

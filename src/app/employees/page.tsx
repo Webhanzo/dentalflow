@@ -8,14 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { getEmployees, addEmployee, deleteEmployee, updateEmployee, getClinics } from "@/lib/data";
+import { MoreHorizontal, PlusCircle, Trash2, Edit } from "lucide-react";
+import { getEmployees, addEmployee, deleteEmployee, updateEmployee, getClinics, getEmployees as getAllEmployees } from "@/lib/data";
 import type { Employee, Clinic } from "@/lib/data";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,14 +23,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
 
 function EmployeeDialog({ open, onOpenChange, onSave, employee, allClinics }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (employee: Employee) => void, employee: Employee | null, allClinics: Clinic[] }) {
-    const [formData, setFormData] = useState<Omit<Employee, 'employee_id' | 'avatar'> | null>(null);
+    const [formData, setFormData] = useState<Omit<Employee, 'employee_id' | 'avatar'> | Employee | null>(null);
 
     useEffect(() => {
         if (employee) {
-            setFormData({ ...employee });
+            setFormData(JSON.parse(JSON.stringify(employee)));
         } else {
             setFormData({
-                first_name: "", last_name: "", email: "", phone: "", role: "dentist", salary: 0, clinic_ids: [], contact_info: { email: "", phone: "" }
+                first_name: "", last_name: "", role: "dentist", salary: 0, clinic_ids: [], contact_info: { email: "", phone: "" }
             });
         }
     }, [employee]);
@@ -40,11 +40,18 @@ function EmployeeDialog({ open, onOpenChange, onSave, employee, allClinics }: { 
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => {
             if (!prev) return null;
-            const current_employee = { ...prev, [field]: value };
-             if (field === 'email' || field === 'phone') {
-                current_employee.contact_info = {...current_employee.contact_info, [field]: value}
+            
+            const keys = field.split('.');
+            if (keys.length > 1) {
+                let nested = { ...prev } as any;
+                keys.slice(0, -1).forEach(key => {
+                nested = nested[key];
+                });
+                nested[keys[keys.length - 1]] = value;
+                return { ...prev };
             }
-            return current_employee;
+
+            return { ...prev, [field]: value };
         });
     };
 
@@ -60,10 +67,17 @@ function EmployeeDialog({ open, onOpenChange, onSave, employee, allClinics }: { 
 
     const handleSave = () => {
         if (formData) {
+             const allEmployees = getAllEmployees();
+             const maxId = allEmployees.reduce((max, e) => {
+                const idNum = parseInt(e.employee_id.replace('EMP', ''));
+                return idNum > max ? idNum : max;
+             }, 0);
+             const newIdNumber = maxId + 1;
+
             const employeeToSave: Employee = {
                 ...formData,
-                employee_id: employee ? employee.employee_id : `EMP${String(Date.now()).slice(-4)}`,
-                avatar: employee ? employee.avatar : `https://placehold.co/100x100.png`
+                employee_id: employee ? employee.employee_id : `EMP${String(newIdNumber).padStart(3, '0')}`,
+                avatar: employee ? employee.avatar : `https://placehold.co/100x100.png?text=${formData.first_name[0]}${formData.last_name[0]}`
             };
             onSave(employeeToSave);
         }
@@ -86,11 +100,11 @@ function EmployeeDialog({ open, onOpenChange, onSave, employee, allClinics }: { 
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-                        <Input id="email" type="email" className="col-span-3" value={formData.contact_info.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                        <Input id="email" type="email" className="col-span-3" value={formData.contact_info.email} onChange={(e) => handleInputChange('contact_info.email', e.target.value)} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="phone" className="text-right">الهاتف</Label>
-                        <Input id="phone" className="col-span-3" value={formData.contact_info.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                        <Input id="phone" className="col-span-3" value={formData.contact_info.phone} onChange={(e) => handleInputChange('contact_info.phone', e.target.value)} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="role" className="text-right">الدور</Label>
@@ -108,13 +122,13 @@ function EmployeeDialog({ open, onOpenChange, onSave, employee, allClinics }: { 
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="salary" className="text-right">الراتب</Label>
-                        <Input id="salary" type="number" className="col-span-3" value={formData.salary} onChange={(e) => handleInputChange('salary', parseFloat(e.target.value))} />
+                        <Input id="salary" type="number" className="col-span-3" value={formData.salary} onChange={(e) => handleInputChange('salary', parseFloat(e.target.value) || 0)} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">العيادات</Label>
                         <div className="col-span-3 grid grid-cols-2 gap-2">
                             {allClinics.map(clinic => (
-                                <div key={clinic.clinic_id} className="flex items-center space-x-2">
+                                <div key={clinic.clinic_id} className="flex items-center space-x-2 space-x-reverse">
                                     <Checkbox
                                         id={`clinic-${clinic.clinic_id}`}
                                         checked={formData.clinic_ids.includes(clinic.clinic_id)}
@@ -143,8 +157,12 @@ function EmployeesTabContent({ clinic, allClinics }: { clinic: Clinic, allClinic
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
+    const refreshEmployees = () => {
+         setEmployees(getEmployees(clinic.clinic_id));
+    }
+
     useEffect(() => {
-        setEmployees(getEmployees(clinic.clinic_id));
+        refreshEmployees();
     }, [clinic]);
 
     const handleAddClick = () => {
@@ -158,17 +176,17 @@ function EmployeesTabContent({ clinic, allClinics }: { clinic: Clinic, allClinic
     };
 
     const handleDeleteEmployee = (employeeId: string) => {
-        setEmployees(deleteEmployee(employeeId).filter(e => e.clinic_ids.includes(clinic.clinic_id)));
+        deleteEmployee(employeeId);
+        refreshEmployees();
     };
 
     const handleSaveEmployee = (employee: Employee) => {
         if (selectedEmployee) {
-            setEmployees(updateEmployee(employee).filter(e => e.clinic_ids.includes(clinic.clinic_id)));
+            updateEmployee(employee);
         } else {
-            const maxId = getEmployees().reduce((max, e) => Math.max(max, parseInt(e.employee_id.replace('EMP', ''))), 0);
-            const newId = `EMP${String(maxId + 1).padStart(3, '0')}`;
-            setEmployees(addEmployee({ ...employee, employee_id: newId }).filter(e => e.clinic_ids.includes(clinic.clinic_id)));
+            addEmployee(employee);
         }
+        refreshEmployees();
         setIsDialogOpen(false);
         setSelectedEmployee(null);
     };
@@ -188,6 +206,7 @@ function EmployeesTabContent({ clinic, allClinics }: { clinic: Clinic, allClinic
                             <TableRow>
                                 <TableHead>الاسم</TableHead>
                                 <TableHead className="hidden md:table-cell">البريد الإلكتروني</TableHead>
+                                <TableHead className="hidden md:table-cell">الهاتف</TableHead>
                                 <TableHead>الدور</TableHead>
                                 <TableHead>الراتب</TableHead>
                                 <TableHead><span className="sr-only">الإجراءات</span></TableHead>
@@ -206,6 +225,7 @@ function EmployeesTabContent({ clinic, allClinics }: { clinic: Clinic, allClinic
                                         </div>
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell">{employee.contact_info.email}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{employee.contact_info.phone}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className="capitalize">
                                             {employee.role === 'dentist' && 'طبيب أسنان'}
@@ -223,22 +243,28 @@ function EmployeesTabContent({ clinic, allClinics }: { clinic: Clinic, allClinic
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleEditClick(employee)}>تعديل</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleEditClick(employee)}>
+                                                    <Edit className="ml-2 h-4 w-4" />
+                                                    تعديل
+                                                </DropdownMenuItem>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" className="w-full justify-start p-2 h-auto font-normal text-destructive focus:text-destructive hover:text-destructive focus:bg-destructive/10">حذف</Button>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                           <Trash2 className="ml-2 h-4 w-4" />
+                                                           حذف
+                                                        </DropdownMenuItem>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                هذا الإجراء لا يمكن التراجع عنه.
+                                                                هذا الإجراء لا يمكن التراجع عنه. سيؤدي إلى حذف الموظف بشكل دائم.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                                             <AlertDialogAction onClick={() => handleDeleteEmployee(employee.employee_id)}>
-                                                                حذف
+                                                                نعم، حذف الموظف
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
@@ -295,7 +321,7 @@ export default function EmployeesPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} className="w-full">
+            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} value={activeClinic} className="w-full">
                 <TabsList>
                     {clinics.map((clinic) => (
                         <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
@@ -312,3 +338,5 @@ export default function EmployeesPage() {
         </DashboardLayout>
     );
 }
+
+    
