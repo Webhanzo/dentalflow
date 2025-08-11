@@ -1,54 +1,155 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Edit, Save, X, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { clients as initialClients, addClient } from "@/lib/data";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { clients as initialClients, addClient, updateClient } from "@/lib/data";
 
 type Client = typeof initialClients[0];
+type Treatment = Client['treatment_history'][0];
+type Payment = Client['payment_details'][0];
 
-function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void }) {
-  if (!client) return null;
+function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onClientUpdate: (client: Client) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableClient, setEditableClient] = useState<Client | null>(JSON.parse(JSON.stringify(client)));
 
-  const InfoField = ({ label, value }: { label: string; value: ReactNode }) => (
+  React.useEffect(() => {
+    setEditableClient(client ? JSON.parse(JSON.stringify(client)) : null);
+    setIsEditing(false);
+  }, [client]);
+
+  if (!client || !editableClient) return null;
+
+  const handleInputChange = (field: string, value: any) => {
+    setEditableClient(prev => {
+      if (!prev) return null;
+      const keys = field.split('.');
+      if (keys.length > 1) {
+        let nested = { ...prev } as any;
+        keys.slice(0, -1).forEach(key => {
+          nested = nested[key];
+        });
+        nested[keys[keys.length - 1]] = value;
+        return { ...prev };
+      }
+      return { ...prev, [field]: value };
+    });
+  };
+
+  const handleTreatmentChange = (index: number, field: keyof Treatment, value: string) => {
+    setEditableClient(prev => {
+      if (!prev) return null;
+      const newHistory = [...prev.treatment_history];
+      newHistory[index] = { ...newHistory[index], [field]: value };
+      return { ...prev, treatment_history: newHistory };
+    });
+  };
+  
+  const handlePaymentChange = (index: number, field: keyof Payment, value: string | number) => {
+    setEditableClient(prev => {
+      if (!prev) return null;
+      const newPayments = [...prev.payment_details];
+      newPayments[index] = { ...newPayments[index], [field]: value };
+      return { ...prev, payment_details: newPayments };
+    });
+  };
+
+  const addTreatmentRow = () => {
+    setEditableClient(prev => {
+      if (!prev) return null;
+      const newHistory: Treatment = { date: new Date().toISOString().split('T')[0], procedure: '', dentist_id: '', notes: ''};
+      return { ...prev, treatment_history: [...prev.treatment_history, newHistory] };
+    });
+  }
+
+  const addPaymentRow = () => {
+     setEditableClient(prev => {
+      if (!prev) return null;
+      const newPayment: Payment = { payment_id: `PAY${String(Date.now()).slice(-4)}`, date: new Date().toISOString().split('T')[0], amount: 0, method: 'cash', status: 'pending'};
+      return { ...prev, payment_details: [...prev.payment_details, newPayment] };
+    });
+  }
+
+  const handleSave = () => {
+    if (editableClient) {
+      onClientUpdate(editableClient);
+      onOpenChange(false);
+      setIsEditing(false);
+    }
+  };
+
+  const InfoField = ({ label, value, name, isEditing }: { label: string; value: ReactNode; name: string; isEditing: boolean }) => (
     <div>
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{value}</p>
+      {isEditing ? (
+        <Input value={value as string} onChange={(e) => handleInputChange(name, e.target.value)} className="mt-1" />
+      ) : (
+        <p className="font-medium">{value}</p>
+      )}
     </div>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px]">
-        <DialogHeader>
-          <DialogTitle>ملف العميل</DialogTitle>
-          <DialogDescription>
-            معلومات مفصلة لـ {client.first_name} {client.last_name}.
-          </DialogDescription>
+        <DialogHeader className="flex-row items-center justify-between">
+            <div>
+              <DialogTitle>ملف العميل</DialogTitle>
+              <DialogDescription>
+                معلومات مفصلة لـ {client.first_name} {client.last_name}.
+              </DialogDescription>
+            </div>
+            <div>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      <X className="h-4 w-4 mr-2" />
+                      إلغاء
+                    </Button>
+                    <Button size="sm" onClick={handleSave}>
+                      <Save className="h-4 w-4 mr-2" />
+                      حفظ
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    تعديل
+                  </Button>
+                )}
+            </div>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto pr-4">
           <Card>
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <InfoField label="الاسم الكامل" value={`${client.first_name} ${client.last_name}`} />
-                <InfoField label="البريد الإلكتروني" value={client.contact_info.email} />
-                <InfoField label="الهاتف" value={client.contact_info.phone} />
-                <InfoField label="العنوان" value={client.contact_info.address} />
+                <InfoField label="الاسم الأول" value={editableClient.first_name} name="first_name" isEditing={isEditing} />
+                <InfoField label="الاسم الأخير" value={editableClient.last_name} name="last_name" isEditing={isEditing} />
+                <InfoField label="البريد الإلكتروني" value={editableClient.contact_info.email} name="contact_info.email" isEditing={isEditing} />
+                <InfoField label="الهاتف" value={editableClient.contact_info.phone} name="contact_info.phone" isEditing={isEditing} />
+                <InfoField label="العنوان" value={editableClient.contact_info.address} name="contact_info.address" isEditing={isEditing} />
+                <InfoField label="آخر زيارة" value={editableClient.last_visit} name="last_visit" isEditing={isEditing} />
               </div>
             </CardContent>
           </Card>
           
           <div>
-            <h3 className="text-lg font-semibold mb-2">تاريخ العلاج</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">تاريخ العلاج</h3>
+              {isEditing && <Button size="sm" variant="outline" onClick={addTreatmentRow}><Plus className="h-4 w-4 ml-2" />إضافة</Button>}
+            </div>
             <Card>
               <CardContent className="p-0">
                 <Table>
@@ -61,12 +162,12 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {client.treatment_history.map((treatment, index) => (
+                    {editableClient.treatment_history.map((treatment, index) => (
                       <TableRow key={index}>
-                        <TableCell>{treatment.date}</TableCell>
-                        <TableCell>{treatment.procedure}</TableCell>
-                        <TableCell>{treatment.dentist_id}</TableCell>
-                        <TableCell>{treatment.notes}</TableCell>
+                        <TableCell>{isEditing ? <Input value={treatment.date} onChange={(e) => handleTreatmentChange(index, 'date', e.target.value)} /> : treatment.date}</TableCell>
+                        <TableCell>{isEditing ? <Input value={treatment.procedure} onChange={(e) => handleTreatmentChange(index, 'procedure', e.target.value)} /> : treatment.procedure}</TableCell>
+                        <TableCell>{isEditing ? <Input value={treatment.dentist_id} onChange={(e) => handleTreatmentChange(index, 'dentist_id', e.target.value)} /> : treatment.dentist_id}</TableCell>
+                        <TableCell>{isEditing ? <Textarea value={treatment.notes} onChange={(e) => handleTreatmentChange(index, 'notes', e.target.value)} /> : treatment.notes}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -76,7 +177,10 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-2">تفاصيل الدفع</h3>
+             <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold">تفاصيل الدفع</h3>
+                {isEditing && <Button size="sm" variant="outline" onClick={addPaymentRow}><Plus className="h-4 w-4 ml-2" />إضافة</Button>}
+              </div>
             <Card>
               <CardContent className="p-0">
                 <Table>
@@ -89,12 +193,26 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {client.payment_details.map((payment, index) => (
+                    {editableClient.payment_details.map((payment, index) => (
                       <TableRow key={index}>
-                        <TableCell>{payment.date}</TableCell>
-                        <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                        <TableCell>{payment.method}</TableCell>
-                        <TableCell><Badge className="capitalize" variant={payment.status === 'paid' ? 'default' : 'secondary'}>{payment.status === 'paid' ? 'مدفوع' : 'معلق'}</Badge></TableCell>
+                        <TableCell>{isEditing ? <Input value={payment.date} onChange={(e) => handlePaymentChange(index, 'date', e.target.value)} /> : payment.date}</TableCell>
+                        <TableCell>{isEditing ? <Input type="number" value={payment.amount} onChange={(e) => handlePaymentChange(index, 'amount', parseFloat(e.target.value))} /> : `$${payment.amount.toFixed(2)}`}</TableCell>
+                        <TableCell>{isEditing ? <Input value={payment.method} onChange={(e) => handlePaymentChange(index, 'method', e.target.value)} /> : payment.method}</TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                             <Select value={payment.status} onValueChange={(value) => handlePaymentChange(index, 'status', value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="paid">مدفوع</SelectItem>
+                                <SelectItem value="pending">معلق</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge className="capitalize" variant={payment.status === 'paid' ? 'default' : 'secondary'}>{payment.status === 'paid' ? 'مدفوع' : 'معلق'}</Badge>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -120,6 +238,10 @@ export default function ClientsPage() {
     phone: "",
     address: ""
   });
+  
+  const sortedClients = useMemo(() => {
+    return [...clients].sort((a, b) => new Date(b.last_visit).getTime() - new Date(a.last_visit).getTime());
+  }, [clients]);
 
   const handleInputChange = (field: string, value: string) => {
     setNewClient(prev => ({ ...prev, [field]: value }));
@@ -146,6 +268,11 @@ export default function ClientsPage() {
     
     setIsAddClientDialogOpen(false);
     setNewClient({ first_name: "", last_name: "", email: "", phone: "", address: "" });
+  };
+  
+  const handleClientUpdate = (updatedClientData: Client) => {
+    const updatedClients = updateClient(updatedClientData);
+    setClients(updatedClients);
   };
 
   const handleViewProfile = (client: Client) => {
@@ -178,7 +305,7 @@ export default function ClientsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clients.map((client) => (
+              {sortedClients.map((client) => (
                 <TableRow key={client.client_id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewProfile(client)}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -209,6 +336,7 @@ export default function ClientsPage() {
         client={selectedClient} 
         open={!!selectedClient} 
         onOpenChange={(open) => { if (!open) setSelectedClient(null) }} 
+        onClientUpdate={handleClientUpdate}
       />
 
       <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
