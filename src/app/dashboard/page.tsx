@@ -8,9 +8,14 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { DollarSign, Users, Calendar, AlertCircle } from "lucide-react";
 import { clients, accounting } from "@/lib/data";
 
+const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
 const chartData = accounting.clinics[0].income.by_date.map(item => ({ name: item.date, revenue: item.amount }));
 
 export default function DashboardPage() {
+  const monthlyRevenue = accounting.clinics[0].income.by_date.reduce((total, item) => total + item.amount, 0) / accounting.clinics[0].income.by_date.length;
+  const pendingPayments = clients.flatMap(c => c.payment_details).filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+  const pendingClientsCount = new Set(clients.filter(c => c.payment_details.some(p => p.status === 'pending')).map(c => c.client_id)).size;
+  
   return (
     <DashboardLayout>
       <div className="flex items-center">
@@ -43,7 +48,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$17,000</div>
+            <div className="text-2xl font-bold">{currencyFormatter.format(monthlyRevenue)}</div>
             <p className="text-xs text-muted-foreground">+12.5% عن الشهر الماضي</p>
           </CardContent>
         </Card>
@@ -53,8 +58,8 @@ export default function DashboardPage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$800.00</div>
-            <p className="text-xs text-muted-foreground">عميل واحد برصيد مستحق</p>
+            <div className="text-2xl font-bold">{currencyFormatter.format(pendingPayments)}</div>
+            <p className="text-xs text-muted-foreground">{pendingClientsCount} عميل برصيد مستحق</p>
           </CardContent>
         </Card>
       </div>
@@ -79,13 +84,14 @@ export default function DashboardPage() {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `$${value / 1000}K`}
+                    tickFormatter={(value) => currencyFormatter.format(value).split(' ')[0]}
                   />
                    <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       borderColor: 'hsl(var(--border))',
                     }}
+                    formatter={(value: number) => currencyFormatter.format(value)}
                     />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -106,8 +112,8 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map(client => (
-                  client.treatment_history.slice(0, 5).map((treatment, index) => (
+                {clients.slice(0, 5).flatMap(client => (
+                  client.treatment_history.slice(0, 1).map((treatment, index) => (
                     <TableRow key={`${client.client_id}-${index}`}>
                       <TableCell>
                         <div className="font-medium">{client.first_name} {client.last_name}</div>
@@ -115,8 +121,8 @@ export default function DashboardPage() {
                       </TableCell>
                       <TableCell>{treatment.procedure}</TableCell>
                        <TableCell>
-                        <Badge variant={client.payment_details[index]?.status === 'paid' ? 'default' : 'secondary'} className={client.payment_details[index]?.status === 'paid' ? 'bg-primary/20 text-primary-foreground' : ''}>
-                          {client.payment_details[index]?.status === 'paid' ? 'مدفوع' : 'معلق'}
+                        <Badge variant={client.payment_details.find(p => p.status === 'paid') ? 'default' : 'secondary'} className={client.payment_details.find(p => p.status === 'paid') ? 'bg-primary/20 text-primary-foreground' : ''}>
+                          {client.payment_details.find(p => p.status === 'paid') ? 'مدفوع' : 'معلق'}
                         </Badge>
                       </TableCell>
                     </TableRow>

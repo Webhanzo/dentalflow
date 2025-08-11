@@ -25,6 +25,9 @@ type Client = typeof initialClients[0];
 type Treatment = Client['treatment_history'][0];
 type Payment = Client['payment_details'][0];
 
+const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
+
+
 function BookAppointmentDialog({ client, open, onOpenChange, onAppointmentBooked }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onAppointmentBooked: (app: Appointment) => void}) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
@@ -280,7 +283,7 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate, onBoo
                     {editableClient.payment_details.map((payment, index) => (
                       <TableRow key={index}>
                         <TableCell>{isEditing ? <Input value={payment.date} onChange={(e) => handlePaymentChange(index, 'date', e.target.value)} /> : payment.date}</TableCell>
-                        <TableCell>{isEditing ? <Input type="number" value={payment.amount} onChange={(e) => handlePaymentChange(index, 'amount', parseFloat(e.target.value))} /> : `$${payment.amount.toFixed(2)}`}</TableCell>
+                        <TableCell>{isEditing ? <Input type="number" value={payment.amount} onChange={(e) => handlePaymentChange(index, 'amount', parseFloat(e.target.value))} /> : currencyFormatter.format(payment.amount)}</TableCell>
                         <TableCell>{isEditing ? <Input value={payment.method} onChange={(e) => handlePaymentChange(index, 'method', e.target.value)} /> : payment.method}</TableCell>
                         <TableCell>
                           {isEditing ? (

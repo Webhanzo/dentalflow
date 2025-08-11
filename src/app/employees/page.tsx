@@ -18,6 +18,8 @@ import { employees as initialEmployees, addEmployee, deleteEmployee, updateEmplo
 
 type Employee = (typeof initialEmployees)[0];
 
+const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState(initialEmployees);
   const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
@@ -50,7 +52,8 @@ export default function EmployeesPage() {
   };
 
   const handleSaveEmployee = () => {
-    const newIdNumber = (employees.length > 0 ? Math.max(...employees.map(e => parseInt(e.employee_id.replace('EMP', '')))) : 0) + 1;
+    const maxId = employees.reduce((max, e) => Math.max(max, parseInt(e.employee_id.replace('EMP', ''))), 0);
+    const newIdNumber = maxId + 1;
     const employeeToAdd: Employee = {
       employee_id: `EMP${String(newIdNumber).padStart(3, '0')}`,
       first_name: newEmployee.first_name,
@@ -145,7 +148,7 @@ export default function EmployeesPage() {
                       {employee.role === 'admin' && 'مدير'}
                     </Badge>
                   </TableCell>
-                   <TableCell>${employee.salary.toLocaleString()}</TableCell>
+                   <TableCell>{currencyFormatter.format(employee.salary)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
