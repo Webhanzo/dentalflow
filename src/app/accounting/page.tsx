@@ -4,14 +4,14 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { accounting as initialAccounting, employees, clients, addIncome, addExpense } from "@/lib/data";
 import type { Income, Expense } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogFooterComponent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -210,10 +210,10 @@ export default function AccountingPage() {
                                     <Input id="income-date" type="date" value={newIncome.date} onChange={(e) => setNewIncome({...newIncome, date: e.target.value})} className="col-span-3" />
                                 </div>
                             </div>
-                            <DialogFooter>
+                            <DialogFooterComponent>
                                 <Button variant="outline" onClick={() => setIsIncomeDialogOpen(false)}>إلغاء</Button>
                                 <Button onClick={() => handleAddIncome(clinic.clinic_id)}>حفظ</Button>
-                            </DialogFooter>
+                            </DialogFooterComponent>
                         </DialogContent>
                     </Dialog>
                      <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
@@ -242,10 +242,10 @@ export default function AccountingPage() {
                                     <Input id="expense-date" type="date" value={newExpense.date} onChange={(e) => setNewExpense({...newExpense, date: e.target.value})} className="col-span-3" />
                                 </div>
                             </div>
-                            <DialogFooter>
+                            <DialogFooterComponent>
                                 <Button variant="outline" onClick={() => setIsExpenseDialogOpen(false)}>إلغاء</Button>
                                 <Button onClick={() => handleAddExpense(clinic.clinic_id)}>حفظ</Button>
-                            </DialogFooter>
+                            </DialogFooterComponent>
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -435,3 +435,5 @@ export default function AccountingPage() {
     </DashboardLayout>
   );
 }
+
+    
