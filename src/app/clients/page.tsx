@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate }: { c
   const [isEditing, setIsEditing] = useState(false);
   const [editableClient, setEditableClient] = useState<Client | null>(JSON.parse(JSON.stringify(client)));
 
-  React.useEffect(() => {
+  useEffect(() => {
     setEditableClient(client ? JSON.parse(JSON.stringify(client)) : null);
     setIsEditing(false);
   }, [client]);
