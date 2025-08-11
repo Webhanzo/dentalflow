@@ -37,6 +37,10 @@ export const employees = [
   },
 ];
 
+export function addEmployee(employee: (typeof employees)[0]) {
+  employees.push(employee);
+}
+
 export const clients = [
   {
     client_id: "CLI001",
@@ -120,3 +124,5 @@ export const accounting = {
     },
   ],
 };
+
+    

@@ -13,10 +13,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { employees } from "@/lib/data";
+import { employees as initialEmployees, addEmployee } from "@/lib/data";
+
+type Employee = (typeof initialEmployees)[0];
 
 export default function EmployeesPage() {
+  const [employees, setEmployees] = useState(initialEmployees);
   const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
+  
+  const [newEmployee, setNewEmployee] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    role: "",
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setNewEmployee(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEmployee = () => {
+    const employeeToAdd = {
+      employee_id: `EMP${String(employees.length + 1).padStart(3, '0')}`,
+      first_name: newEmployee.first_name,
+      last_name: newEmployee.last_name,
+      role: newEmployee.role as Employee['role'],
+      contact_info: {
+        email: newEmployee.email,
+        phone: newEmployee.phone,
+      },
+      clinic_ids: ["C01"], // Default value
+      avatar: "https://placehold.co/100x100.png",
+    };
+    addEmployee(employeeToAdd);
+    setEmployees([...employees, employeeToAdd]);
+    setIsAddEmployeeDialogOpen(false);
+    setNewEmployee({ first_name: "", last_name: "", email: "", phone: "", role: "" });
+  };
+
 
   return (
     <DashboardLayout>
@@ -103,23 +138,23 @@ export default function EmployeesPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="first-name" className="text-right">الاسم الأول</Label>
-              <Input id="first-name" className="col-span-3" />
+              <Input id="first-name" className="col-span-3" value={newEmployee.first_name} onChange={(e) => handleInputChange('first_name', e.target.value)} />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="last-name" className="text-right">الاسم الأخير</Label>
-              <Input id="last-name" className="col-span-3" />
+              <Input id="last-name" className="col-span-3" value={newEmployee.last_name} onChange={(e) => handleInputChange('last_name', e.target.value)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-              <Input id="email" type="email" className="col-span-3" />
+              <Input id="email" type="email" className="col-span-3" value={newEmployee.email} onChange={(e) => handleInputChange('email', e.target.value)} />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="phone" className="text-right">الهاتف</Label>
-              <Input id="phone" className="col-span-3" />
+              <Input id="phone" className="col-span-3" value={newEmployee.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">الدور</Label>
-               <Select>
+               <Select onValueChange={(value) => handleInputChange('role', value)} value={newEmployee.role}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="اختر دورًا" />
                 </SelectTrigger>
@@ -134,10 +169,12 @@ export default function EmployeesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddEmployeeDialogOpen(false)}>إلغاء</Button>
-            <Button type="submit">حفظ الموظف</Button>
+            <Button type="submit" onClick={handleSaveEmployee}>حفظ الموظف</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
   );
 }
+
+    
