@@ -108,7 +108,18 @@ export function deleteClient(clientId: string) {
     return clients;
 }
 
-export let appointments = [
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
+export type Appointment = {
+    appointment_id: string;
+    client_id: string;
+    dentist_id: string;
+    date: string;
+    time: string;
+    procedure: string;
+    status: AppointmentStatus;
+};
+
+export let appointments: Appointment[] = [
     {
         appointment_id: 'APP001',
         client_id: 'CLI001',
@@ -129,10 +140,16 @@ export let appointments = [
     },
 ];
 
-export type Appointment = (typeof appointments)[0];
 
 export function addAppointment(appointment: Appointment) {
     appointments = [...appointments, appointment];
+    return appointments;
+}
+
+export function updateAppointment(appointmentId: string, status: AppointmentStatus) {
+    appointments = appointments.map(app => 
+        app.appointment_id === appointmentId ? { ...app, status } : app
+    );
     return appointments;
 }
 
