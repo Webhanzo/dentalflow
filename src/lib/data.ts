@@ -1,9 +1,10 @@
-export const employees = [
+export let employees = [
   {
     employee_id: "EMP001",
     first_name: "عائشة",
     last_name: "خان",
     role: "dentist",
+    salary: 8000,
     contact_info: { email: "aisha.khan@dentalflow.com", phone: "555-0101" },
     clinic_ids: ["C01"],
     avatar: "https://placehold.co/100x100.png",
@@ -13,6 +14,7 @@ export const employees = [
     first_name: "بندر",
     last_name: "كارتر",
     role: "hygienist",
+    salary: 4500,
     contact_info: { email: "ben.carter@dentalflow.com", phone: "555-0102" },
     clinic_ids: ["C01", "C02"],
      avatar: "https://placehold.co/100x100.png",
@@ -22,6 +24,7 @@ export const employees = [
     first_name: "فاطمة",
     last_name: "الجميل",
     role: "receptionist",
+    salary: 3000,
     contact_info: { email: "fatima.aljamil@dentalflow.com", phone: "555-0103" },
     clinic_ids: ["C01"],
      avatar: "https://placehold.co/100x100.png",
@@ -31,14 +34,29 @@ export const employees = [
     first_name: "ديفيد",
     last_name: "تشين",
     role: "admin",
+    salary: 6000,
     contact_info: { email: "david.chen@dentalflow.com", phone: "555-0104" },
     clinic_ids: ["C01", "C02"],
      avatar: "https://placehold.co/100x100.png",
   },
 ];
 
-export function addEmployee(employee: (typeof employees)[0]) {
+type Employee = (typeof employees)[0];
+
+
+export function addEmployee(employee: Employee) {
   employees.push(employee);
+}
+
+export function updateEmployee(updatedEmployee: Employee) {
+  const index = employees.findIndex(e => e.employee_id === updatedEmployee.employee_id);
+  if (index !== -1) {
+    employees[index] = updatedEmployee;
+  }
+}
+
+export function deleteEmployee(employeeId: string) {
+  employees = employees.filter(e => e.employee_id !== employeeId);
 }
 
 export const clients = [
@@ -124,5 +142,3 @@ export const accounting = {
     },
   ],
 };
-
-    
