@@ -9,11 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { clients } from "@/lib/data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { clients as initialClients, addClient } from "@/lib/data";
 
-type Client = typeof clients[0];
+type Client = typeof initialClients[0];
 
 function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (!client) return null;
@@ -108,7 +109,44 @@ function ClientProfileDialog({ client, open, onOpenChange }: { client: Client | 
 }
 
 export default function ClientsPage() {
+  const [clients, setClients] = useState(initialClients);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  
+  const [newClient, setNewClient] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    address: ""
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setNewClient(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveClient = () => {
+    const newIdNumber = (clients.length > 0 ? Math.max(...clients.map(c => parseInt(c.client_id.replace('CLI', '')))) : 0) + 1;
+    const clientToAdd: Client = {
+      client_id: `CLI${String(newIdNumber).padStart(3, '0')}`,
+      first_name: newClient.first_name,
+      last_name: newClient.last_name,
+      contact_info: {
+        email: newClient.email,
+        phone: newClient.phone,
+        address: newClient.address,
+      },
+      last_visit: new Date().toISOString().split('T')[0], // Today's date
+      treatment_history: [],
+      payment_details: [],
+    };
+    
+    const updatedClients = addClient(clientToAdd);
+    setClients(updatedClients);
+    
+    setIsAddClientDialogOpen(false);
+    setNewClient({ first_name: "", last_name: "", email: "", phone: "", address: "" });
+  };
 
   const handleViewProfile = (client: Client) => {
     setSelectedClient(client);
@@ -121,7 +159,7 @@ export default function ClientsPage() {
           <h1 className="text-lg font-semibold md:text-2xl">إدارة العملاء</h1>
           <p className="text-muted-foreground">عرض وإدارة ملفات العملاء.</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsAddClientDialogOpen(true)}>
           <PlusCircle className="ml-2 h-4 w-4" />
           إضافة عميل
         </Button>
@@ -172,6 +210,43 @@ export default function ClientsPage() {
         open={!!selectedClient} 
         onOpenChange={(open) => { if (!open) setSelectedClient(null) }} 
       />
+
+      <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إضافة عميل جديد</DialogTitle>
+            <DialogDescription>
+              املأ التفاصيل أدناه لإضافة عميل جديد.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="first-name" className="text-right">الاسم الأول</Label>
+              <Input id="first-name" className="col-span-3" value={newClient.first_name} onChange={(e) => handleInputChange('first_name', e.target.value)} />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="last-name" className="text-right">الاسم الأخير</Label>
+              <Input id="last-name" className="col-span-3" value={newClient.last_name} onChange={(e) => handleInputChange('last_name', e.target.value)} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
+              <Input id="email" type="email" className="col-span-3" value={newClient.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">الهاتف</Label>
+              <Input id="phone" className="col-span-3" value={newClient.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="address" className="text-right">العنوان</Label>
+              <Input id="address" className="col-span-3" value={newClient.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddClientDialogOpen(false)}>إلغاء</Button>
+            <Button type="submit" onClick={handleSaveClient}>حفظ العميل</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

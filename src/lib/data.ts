@@ -59,7 +59,7 @@ export function deleteEmployee(employeeId: string) {
   return employees;
 }
 
-export const clients = [
+export let clients = [
   {
     client_id: "CLI001",
     first_name: "جون",
@@ -89,6 +89,24 @@ export const clients = [
     ],
   },
 ];
+
+type Client = (typeof clients)[0];
+
+export function addClient(client: Client) {
+  clients = [...clients, client];
+  return clients;
+}
+
+export function updateClient(updatedClient: Client) {
+    clients = clients.map(c => c.client_id === updatedClient.client_id ? updatedClient : c);
+    return clients;
+}
+
+export function deleteClient(clientId: string) {
+    clients = clients.filter(c => c.client_id !== clientId);
+    return clients;
+}
+
 
 export const accounting = {
   clinics: [
