@@ -1,5 +1,4 @@
 
-
 export type Clinic = {
     clinic_id: string;
     name: string;
@@ -94,6 +93,24 @@ export type Accounting = {
     };
 };
 
+export type Lab = {
+    lab_id: string;
+    name: string;
+    phone: string;
+};
+
+export type LabCaseStatus = 'sent' | 'in_progress' | 'completed' | 'received';
+export type LabCase = {
+    case_id: string;
+    lab_id: string;
+    client_name: string;
+    date_sent: string;
+    date_due: string;
+    notes: string;
+    status: LabCaseStatus;
+};
+
+
 let clinics: Clinic[] = [
     { clinic_id: "C01", name: "عيادة الشارع الرئيسي" },
     { clinic_id: "C02", name: "عيادة الجانب الغربي" },
@@ -106,7 +123,7 @@ let employees: Employee[] = [
     last_name: "خان",
     role: "dentist",
     salary: 2000,
-    contact_info: { email: "aisha.khan@dentalflow.com", phone: "555-0101" },
+    contact_info: { email: "aisha.khan@dentalflow.com", phone: "0791234567" },
     clinic_ids: ["C01"],
     avatar: "https://placehold.co/100x100.png",
   },
@@ -116,7 +133,7 @@ let employees: Employee[] = [
     last_name: "كارتر",
     role: "hygienist",
     salary: 1200,
-    contact_info: { email: "ben.carter@dentalflow.com", phone: "555-0102" },
+    contact_info: { email: "ben.carter@dentalflow.com", phone: "0781234567" },
     clinic_ids: ["C01", "C02"],
      avatar: "https://placehold.co/100x100.png",
   },
@@ -126,7 +143,7 @@ let employees: Employee[] = [
     last_name: "الجميل",
     role: "receptionist",
     salary: 800,
-    contact_info: { email: "fatima.aljamil@dentalflow.com", phone: "555-0103" },
+    contact_info: { email: "fatima.aljamil@dentalflow.com", phone: "0771234567" },
     clinic_ids: ["C01"],
      avatar: "https://placehold.co/100x100.png",
   },
@@ -136,7 +153,7 @@ let employees: Employee[] = [
     last_name: "تشين",
     role: "admin",
     salary: 1500,
-    contact_info: { email: "david.chen@dentalflow.com", phone: "555-0104" },
+    contact_info: { email: "david.chen@dentalflow.com", phone: "0761234567" },
     clinic_ids: ["C01", "C02"],
      avatar: "https://placehold.co/100x100.png",
   },
@@ -273,12 +290,24 @@ let accounting: Accounting[] = [
     },
 ];
 
+let labs: Lab[] = [
+    { lab_id: "LAB01", name: "مختبر الدقة للأسنان", phone: "061234567" },
+    { lab_id: "LAB02", name: "مختبر المدينة للتركيبات", phone: "067654321" },
+];
+
+let labCases: LabCase[] = [
+    { case_id: "CASE001", lab_id: "LAB01", client_name: "جون دو", date_sent: "2024-07-15", date_due: "2024-07-25", status: "in_progress", notes: "طبعة جسر بورسلين للأسنان العلوية." },
+    { case_id: "CASE002", lab_id: "LAB02", client_name: "جين سميث", date_sent: "2024-07-18", date_due: "2024-07-28", status: "sent", notes: "تاج زركونيوم للسن رقم 14." },
+];
+
 let masterData = {
     clinics,
     employees,
     clients,
     appointments,
     accounting,
+    labs,
+    labCases,
 };
 
 function deepClone<T>(obj: T): T {
@@ -387,6 +416,14 @@ export function deleteEmployee(employeeId: string) {
 
 // --- Client Management ---
 export function addClient(client: Client) {
+  const clinicClients = masterData.clients.filter(c => c.clinic_id === client.clinic_id);
+  const maxId = clinicClients.reduce((max, c) => {
+      const idNum = parseInt(c.client_id.replace('CLI', ''));
+      return idNum > max ? idNum : max;
+  }, 0);
+  const newIdNumber = maxId + 1;
+  client.client_id = `CLI${String(newIdNumber).padStart(3, '0')}`;
+  
   masterData.clients.push(client);
   return getClients(client.clinic_id);
 }
@@ -441,4 +478,46 @@ export function addExpense(clinicId: string, expense: Expense) {
         clinicAcc.expenses.total += expense.amount;
     }
     return getAccounting(clinicId);
+}
+
+// --- Lab Management ---
+export function getLabs() {
+    return deepClone(masterData.labs);
+}
+
+export function addLab(lab: Omit<Lab, 'lab_id'>) {
+    const newId = `LAB${String(masterData.labs.length + 1).padStart(2, '0')}`;
+    masterData.labs.push({ ...lab, lab_id: newId });
+    return deepClone(masterData.labs);
+}
+
+export function updateLab(updatedLab: Lab) {
+    masterData.labs = masterData.labs.map(l => l.lab_id === updatedLab.lab_id ? updatedLab : l);
+    return deepClone(masterData.labs);
+}
+
+export function deleteLab(labId: string) {
+    masterData.labs = masterData.labs.filter(l => l.lab_id !== labId);
+    masterData.labCases = masterData.labCases.filter(c => c.lab_id !== labId);
+    return deepClone(masterData.labs);
+}
+
+export function getLabCases() {
+    return deepClone(masterData.labCases);
+}
+
+export function addLabCase(labCase: Omit<LabCase, 'case_id'>) {
+    const newId = `CASE${String(masterData.labCases.length + 1).padStart(3, '0')}`;
+    masterData.labCases.push({ ...labCase, case_id: newId });
+    return deepClone(masterData.labCases);
+}
+
+export function updateLabCase(updatedCase: Omit<LabCase, 'case_id'> | LabCase) {
+    if ('case_id' in updatedCase) {
+        masterData.labCases = masterData.labCases.map(c => c.case_id === updatedCase.case_id ? updatedCase : c);
+    } else {
+         const newId = `CASE${String(masterData.labCases.length + 1).padStart(3, '0')}`;
+         masterData.labCases.push({ ...updatedCase, case_id: newId });
+    }
+    return deepClone(masterData.labCases);
 }
