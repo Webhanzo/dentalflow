@@ -34,8 +34,9 @@ export default function EmployeesPage() {
   };
 
   const handleSaveEmployee = () => {
+    const newIdNumber = Math.max(...employees.map(e => parseInt(e.employee_id.replace('EMP', ''))), 0) + 1;
     const employeeToAdd = {
-      employee_id: `EMP${String(employees.length + 1).padStart(3, '0')}`,
+      employee_id: `EMP${String(newIdNumber).padStart(3, '0')}`,
       first_name: newEmployee.first_name,
       last_name: newEmployee.last_name,
       role: newEmployee.role as Employee['role'],
@@ -46,8 +47,10 @@ export default function EmployeesPage() {
       clinic_ids: ["C01"], // Default value
       avatar: "https://placehold.co/100x100.png",
     };
+    
+    setEmployees(prev => [...prev, employeeToAdd]);
     addEmployee(employeeToAdd);
-    setEmployees([...employees, employeeToAdd]);
+    
     setIsAddEmployeeDialogOpen(false);
     setNewEmployee({ first_name: "", last_name: "", email: "", phone: "", role: "" });
   };
@@ -176,5 +179,3 @@ export default function EmployeesPage() {
     </DashboardLayout>
   );
 }
-
-    
