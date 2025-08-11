@@ -108,6 +108,7 @@ export type LabCase = {
     date_due: string;
     notes: string;
     status: LabCaseStatus;
+    clinic_id: string;
 };
 
 
@@ -296,8 +297,8 @@ let labs: Lab[] = [
 ];
 
 let labCases: LabCase[] = [
-    { case_id: "CASE001", lab_id: "LAB01", client_name: "جون دو", date_sent: "2024-07-15", date_due: "2024-07-25", status: "in_progress", notes: "طبعة جسر بورسلين للأسنان العلوية." },
-    { case_id: "CASE002", lab_id: "LAB02", client_name: "جين سميث", date_sent: "2024-07-18", date_due: "2024-07-28", status: "sent", notes: "تاج زركونيوم للسن رقم 14." },
+    { case_id: "CASE001", lab_id: "LAB01", client_name: "جون دو", date_sent: "2024-07-15", date_due: "2024-07-25", status: "in_progress", notes: "طبعة جسر بورسلين للأسنان العلوية.", clinic_id: "C01" },
+    { case_id: "CASE002", lab_id: "LAB02", client_name: "جين سميث", date_sent: "2024-07-18", date_due: "2024-07-28", status: "sent", notes: "تاج زركونيوم للسن رقم 14.", clinic_id: "C02"},
 ];
 
 let masterData = {
@@ -416,8 +417,8 @@ export function deleteEmployee(employeeId: string) {
 
 // --- Client Management ---
 export function addClient(client: Client) {
-  const clinicClients = masterData.clients.filter(c => c.clinic_id === client.clinic_id);
-  const maxId = clinicClients.reduce((max, c) => {
+  const allClients = masterData.clients;
+  const maxId = allClients.reduce((max, c) => {
       const idNum = parseInt(c.client_id.replace('CLI', ''));
       return idNum > max ? idNum : max;
   }, 0);
@@ -502,7 +503,10 @@ export function deleteLab(labId: string) {
     return deepClone(masterData.labs);
 }
 
-export function getLabCases() {
+export function getLabCases(clinicId?: string) {
+    if (clinicId) {
+        return deepClone(masterData.labCases.filter(c => c.clinic_id === clinicId));
+    }
     return deepClone(masterData.labCases);
 }
 
@@ -521,3 +525,4 @@ export function updateLabCase(updatedCase: Omit<LabCase, 'case_id'> | LabCase) {
     }
     return deepClone(masterData.labCases);
 }
+

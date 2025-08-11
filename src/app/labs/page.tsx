@@ -15,11 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getLabs, getLabCases, addLab, updateLab, deleteLab, addLabCase, updateLabCase } from "@/lib/data";
-import type { Lab, LabCase, LabCaseStatus } from "@/lib/data";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { getLabs, getLabCases, addLab, updateLab, deleteLab, addLabCase, updateLabCase, getClinics, getClients } from "@/lib/data";
+import type { Lab, LabCase, LabCaseStatus, Clinic, Client } from "@/lib/data";
 import { format } from "date-fns";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 
 function LabDialog({ open, onOpenChange, onSave, lab }: { open: boolean; onOpenChange: (open: boolean) => void; onSave: (lab: Omit<Lab, 'lab_id'>) => void; lab: Lab | null }) {
     const [name, setName] = useState('');
@@ -66,7 +66,7 @@ function LabDialog({ open, onOpenChange, onSave, lab }: { open: boolean; onOpenC
     );
 }
 
-function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChangeInParent }: { open: boolean; onOpenChange: (open: boolean) => void; onSave: (labCase: Omit<LabCase, 'case_id'> | LabCase) => void; labCase: LabCase | null; labs: Lab[]; onOpenChangeInParent: (value: boolean) => void; }) {
+function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, clients, clinicId, onOpenChangeInParent }: { open: boolean; onOpenChange: (open: boolean) => void; onSave: (labCase: Omit<LabCase, 'case_id'> | LabCase) => void; labCase: LabCase | null; labs: Lab[]; clients: Client[]; clinicId: string; onOpenChangeInParent: (value: boolean) => void; }) {
     const [formData, setFormData] = useState<Omit<LabCase, 'case_id'>>({
         lab_id: '',
         client_name: '',
@@ -74,6 +74,7 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
         date_sent: format(new Date(), 'yyyy-MM-dd'),
         date_due: format(new Date(), 'yyyy-MM-dd'),
         status: 'sent',
+        clinic_id: clinicId,
     });
 
     useEffect(() => {
@@ -87,9 +88,10 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
                 date_sent: format(new Date(), 'yyyy-MM-dd'),
                 date_due: format(new Date(), 'yyyy-MM-dd'),
                 status: 'sent',
+                clinic_id: clinicId,
             });
         }
-    }, [labCase, labs]);
+    }, [labCase, labs, clinicId]);
 
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,7 +111,7 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="lab-id" className="text-right">المختبر</Label>
                         <Select value={formData.lab_id} onValueChange={(value) => handleInputChange('lab_id', value)}>
-                            <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="col-span-3"><SelectValue placeholder="اختر مختبراً" /></SelectTrigger>
                             <SelectContent>
                                 {labs.map(lab => <SelectItem key={lab.lab_id} value={lab.lab_id}>{lab.name}</SelectItem>)}
                             </SelectContent>
@@ -117,7 +119,12 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="client-name" className="text-right">اسم العميل</Label>
-                        <Input id="client-name" value={formData.client_name} onChange={(e) => handleInputChange('client_name', e.target.value)} className="col-span-3" />
+                         <Select value={formData.client_name} onValueChange={(value) => handleInputChange('client_name', value)}>
+                            <SelectTrigger className="col-span-3"><SelectValue placeholder="اختر عميلاً" /></SelectTrigger>
+                            <SelectContent>
+                                {clients.map(client => <SelectItem key={client.client_id} value={`${client.first_name} ${client.last_name}`}>{client.first_name} {client.last_name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="date-sent" className="text-right">تاريخ الإرسال</Label>
@@ -153,9 +160,10 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
     );
 }
 
-export default function LabsPage() {
+function LabsTabContent({ clinic }: { clinic: Clinic }) {
     const [labs, setLabs] = useState<Lab[]>([]);
     const [labCases, setLabCases] = useState<LabCase[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     
     const [isLabDialogOpen, setIsLabDialogOpen] = useState(false);
     const [isCaseDialogOpen, setIsCaseDialogOpen] = useState(false);
@@ -164,11 +172,12 @@ export default function LabsPage() {
 
     useEffect(() => {
         refreshData();
-    }, []);
+    }, [clinic]);
 
     const refreshData = () => {
         setLabs(getLabs());
-        setLabCases(getLabCases());
+        setLabCases(getLabCases(clinic.clinic_id));
+        setClients(getClients(clinic.clinic_id));
     };
 
     const handleSaveLab = (labData: Omit<Lab, 'lab_id'>) => {
@@ -212,16 +221,10 @@ export default function LabsPage() {
             case 'received': return 'تم الاستلام';
         }
     }
-
-    return (
-        <DashboardLayout>
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold md:text-2xl">إدارة المختبرات</h1>
-                    <p className="text-muted-foreground">تتبع الحالات المرسلة إلى مختبرات الأسنان.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => { setSelectedLab(null); setIsLabDialogOpen(true); }}>
+     return (
+        <div className="mt-4">
+             <div className="flex items-center justify-end mb-4 gap-2">
+                 <Button onClick={() => { setSelectedLab(null); setIsLabDialogOpen(true); }}>
                         <PlusCircle className="ml-2 h-4 w-4" />
                         إضافة مختبر
                     </Button>
@@ -230,9 +233,7 @@ export default function LabsPage() {
                         إضافة حالة
                     </Button>
                 </div>
-            </div>
-
-            <div className="grid gap-6 mt-4">
+            <div className="grid gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>قائمة المختبرات</CardTitle>
@@ -294,7 +295,7 @@ export default function LabsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>حالات المختبر</CardTitle>
-                        <CardDescription>جميع الحالات المرسلة إلى المختبرات.</CardDescription>
+                        <CardDescription>جميع الحالات المرسلة إلى المختبرات من {clinic.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -332,8 +333,7 @@ export default function LabsPage() {
                     </CardContent>
                 </Card>
             </div>
-            
-            {isLabDialogOpen && (
+             {isLabDialogOpen && (
                 <LabDialog 
                     open={isLabDialogOpen} 
                     onOpenChange={setIsLabDialogOpen} 
@@ -349,8 +349,59 @@ export default function LabsPage() {
                     onSave={handleSaveCase} 
                     labCase={selectedCase} 
                     labs={labs}
+                    clients={clients}
+                    clinicId={clinic.clinic_id}
                 />
             )}
+        </div>
+     )
+}
+
+
+export default function LabsPage() {
+    const [clinics, setClinics] = useState<Clinic[]>([]);
+    const [activeClinic, setActiveClinic] = useState<string>('');
+
+    useEffect(() => {
+        const allClinics = getClinics();
+        setClinics(allClinics);
+        if (allClinics.length > 0) {
+            setActiveClinic(allClinics[0].clinic_id);
+        }
+    }, []);
+
+    if (clinics.length === 0) {
+        return (
+            <DashboardLayout>
+                <div>لا توجد عيادات. يرجى إضافة عيادة من لوحة التحكم.</div>
+            </DashboardLayout>
+        );
+    }
+    
+    return (
+        <DashboardLayout>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold md:text-2xl">إدارة المختبرات</h1>
+                    <p className="text-muted-foreground">تتبع الحالات المرسلة إلى مختبرات الأسنان.</p>
+                </div>
+            </div>
+
+            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} value={activeClinic} className="w-full">
+                <TabsList>
+                    {clinics.map((clinic) => (
+                        <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
+                            {clinic.name}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                {clinics.map((clinic) => (
+                    <TabsContent key={clinic.clinic_id} value={clinic.clinic_id}>
+                        <LabsTabContent clinic={clinic} />
+                    </TabsContent>
+                ))}
+            </Tabs>
         </DashboardLayout>
     );
 }
+
