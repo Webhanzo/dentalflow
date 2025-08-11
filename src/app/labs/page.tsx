@@ -149,7 +149,8 @@ function LabCaseDialog({ open, onOpenChange, onSave, labCase, labs, onOpenChange
                     <Button onClick={handleSave}>حفظ</Button>
                 </DialogFooter>
             </DialogContent>
-        );
+        </Dialog>
+    );
 }
 
 export default function LabsPage() {
