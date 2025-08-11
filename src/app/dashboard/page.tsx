@@ -1,27 +1,43 @@
+
 "use client";
 
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { DollarSign, Users, Calendar, AlertCircle } from "lucide-react";
-import { clients, accounting } from "@/lib/data";
+import { getClinics, getDashboardData } from "@/lib/data";
+import type { Clinic, Client, Accounting, Appointment } from "@/lib/data";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
-const chartData = accounting.clinics[0].income.by_date.map(item => ({ name: item.date, revenue: item.amount }));
 
-export default function DashboardPage() {
-  const monthlyRevenue = accounting.clinics[0].income.by_date.reduce((total, item) => total + item.amount, 0) / accounting.clinics[0].income.by_date.length;
+function DashboardTabContent({ clinic }: { clinic: Clinic }) {
+  const [data, setData] = useState<{ clients: Client[], accounting?: Accounting, appointments: Appointment[] } | null>(null);
+
+  useEffect(() => {
+    const fetchedData = getDashboardData(clinic.clinic_id);
+    setData(fetchedData);
+  }, [clinic]);
+
+  if (!data || !data.accounting) {
+    return <div>جاري التحميل...</div>;
+  }
+
+  const { clients, accounting, appointments } = data;
+
+  const monthlyRevenue = accounting.income.by_date.reduce((total, item) => total + item.amount, 0) / (accounting.income.by_date.length || 1);
   const pendingPayments = clients.flatMap(c => c.payment_details).filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
   const pendingClientsCount = new Set(clients.filter(c => c.payment_details.some(p => p.status === 'pending')).map(c => c.client_id)).size;
+  const todayAppointments = appointments.filter(a => new Date(a.date).toDateString() === new Date().toDateString()).length;
   
+  const chartData = accounting.income.by_date.map(item => ({ name: item.date, revenue: item.amount }));
+
   return (
-    <DashboardLayout>
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">لوحة التحكم</h1>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+    <div className="space-y-4">
+       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي المرضى</CardTitle>
@@ -38,7 +54,7 @@ export default function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{todayAppointments}</div>
             <p className="text-xs text-muted-foreground">+3 عن أمس</p>
           </CardContent>
         </Card>
@@ -67,7 +83,7 @@ export default function DashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>نظرة عامة على إيرادات العيادة</CardTitle>
-            <CardDescription>إيرادات عيادة الشارع الرئيسي في آخر 5 أشهر.</CardDescription>
+            <CardDescription>إيرادات {clinic.name} في آخر 5 أشهر.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
              <ResponsiveContainer width="100%" height={350}>
@@ -133,6 +149,49 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+export default function DashboardPage() {
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [activeClinic, setActiveClinic] = useState<string>('');
+
+  useEffect(() => {
+    const allClinics = getClinics();
+    setClinics(allClinics);
+    if (allClinics.length > 0) {
+      setActiveClinic(allClinics[0].clinic_id);
+    }
+  }, []);
+
+  if (clinics.length === 0) {
+    return (
+      <DashboardLayout>
+        <div>لا توجد عيادات. يرجى إضافة عيادة من قسم المحاسبة.</div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="flex items-center">
+        <h1 className="text-lg font-semibold md:text-2xl">لوحة التحكم</h1>
+      </div>
+      <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} className="w-full">
+        <TabsList>
+          {clinics.map(clinic => (
+            <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
+              {clinic.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {clinics.map(clinic => (
+          <TabsContent key={clinic.clinic_id} value={clinic.clinic_id} className="mt-4">
+            <DashboardTabContent clinic={clinic} />
+          </TabsContent>
+        ))}
+      </Tabs>
     </DashboardLayout>
   );
 }

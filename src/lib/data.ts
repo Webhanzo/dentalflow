@@ -1,6 +1,105 @@
 
 
-export let employees = [
+export type Clinic = {
+    clinic_id: string;
+    name: string;
+};
+
+export type Employee = {
+    employee_id: string;
+    first_name: string;
+    last_name: string;
+    role: "dentist" | "hygienist" | "receptionist" | "admin";
+    salary: number;
+    contact_info: {
+        email: string;
+        phone: string;
+    };
+    clinic_ids: string[];
+    avatar: string;
+};
+
+export type Client = {
+    client_id: string;
+    first_name: string;
+    last_name: string;
+    contact_info: {
+        email: string;
+        phone: string;
+        address: string;
+    };
+    last_visit: string;
+    treatment_history: {
+        date: string;
+        procedure: string;
+        dentist_id: string;
+        notes: string;
+    }[];
+    payment_details: {
+        payment_id: string;
+        date: string;
+        amount: number;
+        method: string;
+        status: "paid" | "pending";
+    }[];
+    clinic_id: string;
+};
+
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
+export type Appointment = {
+    appointment_id: string;
+    client_id: string;
+    dentist_id: string;
+    date: string;
+    time: string;
+    procedure: string;
+    status: AppointmentStatus;
+    clinic_id: string;
+};
+
+export type Income = {
+    date: string;
+    amount: number;
+    source: string;
+};
+
+export type Expense = {
+    date: string;
+    amount: number;
+    category: string;
+};
+
+export type Accounting = {
+    clinic_id: string;
+    income: {
+        total: number;
+        by_date: Income[];
+    };
+    expenses: {
+        total: number;
+        by_date: Expense[];
+    };
+    financials: {
+        assets: {
+            cash: number;
+            accounts_receivable: number;
+            equipment: number;
+        };
+        liabilities: {
+            accounts_payable: number;
+        };
+        equity: {
+            owner_investment: number;
+        };
+    };
+};
+
+let clinics: Clinic[] = [
+    { clinic_id: "C01", name: "عيادة الشارع الرئيسي" },
+    { clinic_id: "C02", name: "عيادة الجانب الغربي" },
+];
+
+let employees: Employee[] = [
   {
     employee_id: "EMP001",
     first_name: "عائشة",
@@ -43,25 +142,7 @@ export let employees = [
   },
 ];
 
-type Employee = (typeof employees)[0];
-
-
-export function addEmployee(employee: Employee) {
-  employees = [...employees, employee];
-  return employees;
-}
-
-export function updateEmployee(updatedEmployee: Employee) {
-  employees = employees.map(e => e.employee_id === updatedEmployee.employee_id ? updatedEmployee : e);
-  return employees;
-}
-
-export function deleteEmployee(employeeId: string) {
-  employees = employees.filter(e => e.employee_id !== employeeId);
-  return employees;
-}
-
-export let clients = [
+let clients: Client[] = [
   {
     client_id: "CLI001",
     first_name: "جون",
@@ -76,6 +157,7 @@ export let clients = [
       { payment_id: "PAY001", date: "2024-05-15", amount: 350, method: "بطاقة ائتمان", status: "paid" },
       { payment_id: "PAY002", date: "2024-01-20", amount: 50, method: "تأمين", status: "paid" },
     ],
+    clinic_id: "C01",
   },
   {
     client_id: "CLI002",
@@ -89,38 +171,11 @@ export let clients = [
     payment_details: [
       { payment_id: "PAY003", date: "2024-06-01", amount: 250, method: "بطاقة ائتمان", status: "pending" },
     ],
+    clinic_id: "C02"
   },
 ];
 
-type Client = (typeof clients)[0];
-
-export function addClient(client: Client) {
-  clients = [...clients, client];
-  return clients;
-}
-
-export function updateClient(updatedClient: Client) {
-    clients = clients.map(c => c.client_id === updatedClient.client_id ? updatedClient : c);
-    return clients;
-}
-
-export function deleteClient(clientId: string) {
-    clients = clients.filter(c => c.client_id !== clientId);
-    return clients;
-}
-
-export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
-export type Appointment = {
-    appointment_id: string;
-    client_id: string;
-    dentist_id: string;
-    date: string;
-    time: string;
-    procedure: string;
-    status: AppointmentStatus;
-};
-
-export let appointments: Appointment[] = [
+let appointments: Appointment[] = [
     {
         appointment_id: 'APP001',
         client_id: 'CLI001',
@@ -129,6 +184,7 @@ export let appointments: Appointment[] = [
         time: '10:00',
         procedure: 'فحص دوري',
         status: 'scheduled',
+        clinic_id: 'C01',
     },
     {
         appointment_id: 'APP002',
@@ -138,39 +194,13 @@ export let appointments: Appointment[] = [
         time: '11:00',
         procedure: 'تنظيف',
         status: 'scheduled',
+        clinic_id: 'C02',
     },
 ];
 
-
-export function addAppointment(appointment: Appointment) {
-    appointments = [...appointments, appointment];
-    return appointments;
-}
-
-export function updateAppointment(appointmentId: string, status: AppointmentStatus) {
-    appointments = appointments.map(app => 
-        app.appointment_id === appointmentId ? { ...app, status } : app
-    );
-    return appointments;
-}
-
-export type Income = {
-    date: string;
-    amount: number;
-    source: string;
-};
-
-export type Expense = {
-    date: string;
-    amount: number;
-    category: string;
-};
-
-let accountingData = {
-  clinics: [
+let accounting: Accounting[] = [
     {
       clinic_id: "C01",
-      name: "عيادة الشارع الرئيسي",
       income: {
         total: 25000,
         by_date: [
@@ -194,7 +224,7 @@ let accountingData = {
        financials: {
         assets: {
           cash: 15000,
-          accounts_receivable: 250, // from Jane Smith
+          accounts_receivable: 0,
           equipment: 5000,
         },
         liabilities: {
@@ -207,7 +237,6 @@ let accountingData = {
     },
     {
       clinic_id: "C02",
-      name: "عيادة الجانب الغربي",
       income: {
         total: 18000,
         by_date: [
@@ -231,7 +260,7 @@ let accountingData = {
       financials: {
         assets: {
           cash: 10000,
-          accounts_receivable: 0,
+          accounts_receivable: 250,
           equipment: 3000,
         },
         liabilities: {
@@ -242,27 +271,162 @@ let accountingData = {
         }
       }
     },
-  ],
+];
+
+let masterData = {
+    clinics,
+    employees,
+    clients,
+    appointments,
+    accounting,
 };
 
-export let accounting = JSON.parse(JSON.stringify(accountingData));
+function deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+}
 
-export function addIncome(clinicId: string, income: Income) {
-    const clinic = accounting.clinics.find(c => c.clinic_id === clinicId);
-    if(clinic) {
-        clinic.income.by_date.push(income);
-        clinic.income.total += income.amount;
+// --- Clinic Management ---
+export function getClinics() {
+    return deepClone(masterData.clinics);
+}
+
+export function addClinic(name: string) {
+    const newId = `C${String(masterData.clinics.length + 1).padStart(2, '0')}`;
+    const newClinic: Clinic = { clinic_id: newId, name };
+    masterData.clinics.push(newClinic);
+    // Add default accounting data for the new clinic
+    masterData.accounting.push({
+        clinic_id: newId,
+        income: { total: 0, by_date: [] },
+        expenses: { total: 0, by_date: [] },
+        financials: {
+            assets: { cash: 0, accounts_receivable: 0, equipment: 0 },
+            liabilities: { accounts_payable: 0 },
+            equity: { owner_investment: 0 },
+        }
+    });
+    return deepClone(masterData);
+}
+
+export function deleteClinic(clinicId: string) {
+    masterData.clinics = masterData.clinics.filter(c => c.clinic_id !== clinicId);
+    masterData.employees = masterData.employees.map(e => ({
+        ...e,
+        clinic_ids: e.clinic_ids.filter(id => id !== clinicId),
+    })).filter(e => e.clinic_ids.length > 0);
+    masterData.clients = masterData.clients.filter(c => c.clinic_id !== clinicId);
+    masterData.appointments = masterData.appointments.filter(a => a.clinic_id !== clinicId);
+    masterData.accounting = masterData.accounting.filter(acc => acc.clinic_id !== clinicId);
+    return deepClone(masterData);
+}
+
+// --- Data Fetching by Clinic ---
+export function getDashboardData(clinicId: string) {
+    const clinicAccounting = masterData.accounting.find(a => a.clinic_id === clinicId);
+    const clinicClients = masterData.clients.filter(c => c.clinic_id === clinicId);
+    const clinicAppointments = masterData.appointments.filter(a => a.clinic_id === clinicId);
+
+    return deepClone({
+        accounting: clinicAccounting,
+        clients: clinicClients,
+        appointments: clinicAppointments,
+        employees: masterData.employees.filter(e => e.clinic_ids.includes(clinicId)),
+    });
+}
+
+export function getEmployees(clinicId?: string) {
+    if (clinicId) {
+        return deepClone(masterData.employees.filter(e => e.clinic_ids.includes(clinicId)));
     }
-    return JSON.parse(JSON.stringify(accounting));
+    return deepClone(masterData.employees);
+}
+
+export function getClients(clinicId: string) {
+    return deepClone(masterData.clients.filter(c => c.clinic_id === clinicId));
+}
+
+export function getAppointments(clinicId: string) {
+    return deepClone(masterData.appointments.filter(a => a.clinic_id === clinicId));
+}
+
+export function getAccounting(clinicId?: string) {
+     if (clinicId) {
+        return deepClone(masterData.accounting.find(a => a.clinic_id === clinicId));
+    }
+    return deepClone(masterData.accounting);
+}
+
+
+// --- Employee Management ---
+export function addEmployee(employee: Employee) {
+  masterData.employees.push(employee);
+  return getEmployees();
+}
+
+export function updateEmployee(updatedEmployee: Employee) {
+  masterData.employees = masterData.employees.map(e => e.employee_id === updatedEmployee.employee_id ? updatedEmployee : e);
+  return getEmployees();
+}
+
+export function deleteEmployee(employeeId: string) {
+  masterData.employees = masterData.employees.filter(e => e.employee_id !== employeeId);
+  return getEmployees();
+}
+
+// --- Client Management ---
+export function addClient(client: Client) {
+  masterData.clients.push(client);
+  return getClients(client.clinic_id);
+}
+
+export function updateClient(updatedClient: Client) {
+    masterData.clients = masterData.clients.map(c => c.client_id === updatedClient.client_id ? updatedClient : c);
+    return getClients(updatedClient.clinic_id);
+}
+
+export function deleteClient(clientId: string) {
+    const client = masterData.clients.find(c => c.client_id === clientId);
+    if(client){
+        masterData.clients = masterData.clients.filter(c => c.client_id !== clientId);
+        return getClients(client.clinic_id);
+    }
+    return [];
+}
+
+
+// --- Appointment Management ---
+export function addAppointment(appointment: Appointment) {
+    masterData.appointments.push(appointment);
+    return getAppointments(appointment.clinic_id);
+}
+
+export function updateAppointmentStatus(appointmentId: string, status: AppointmentStatus) {
+    let clinicId = '';
+    masterData.appointments = masterData.appointments.map(app => {
+        if (app.appointment_id === appointmentId) {
+            clinicId = app.clinic_id;
+            return { ...app, status };
+        }
+        return app;
+    });
+    return getAppointments(clinicId);
+}
+
+// --- Accounting Management ---
+export function addIncome(clinicId: string, income: Income) {
+    const clinicAcc = masterData.accounting.find(c => c.clinic_id === clinicId);
+    if(clinicAcc) {
+        clinicAcc.income.by_date.push(income);
+        clinicAcc.income.total += income.amount;
+    }
+    return getAccounting(clinicId);
 }
 
 export function addExpense(clinicId: string, expense: Expense) {
-    const clinic = accounting.clinics.find(c => c.clinic_id === clinicId);
-    if(clinic) {
-        clinic.expenses.by_date.push(expense);
-        clinic.expenses.total += expense.amount;
+    const clinicAcc = masterData.accounting.find(c => c.clinic_id === clinicId);
+    if(clinicAcc) {
+        clinicAcc.expenses.by_date.push(expense);
+        clinicAcc.expenses.total += expense.amount;
     }
-    return JSON.parse(JSON.stringify(accounting));
+    return getAccounting(clinicId);
 }
-
-    

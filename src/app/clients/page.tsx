@@ -17,16 +17,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { clients as initialClients, addClient, updateClient, appointments, addAppointment } from "@/lib/data";
-import type { Appointment } from "@/lib/data";
+import { getClinics, getClients, addClient, updateClient, getAppointments, addAppointment } from "@/lib/data";
+import type { Appointment, Client, Clinic } from "@/lib/data";
 
-type Client = typeof initialClients[0];
 type Treatment = Client['treatment_history'][0];
 type Payment = Client['payment_details'][0];
 
 const currencyFormatter = new Intl.NumberFormat('ar-JO', { style: 'currency', currency: 'JOD' });
-
 
 function BookAppointmentDialog({ client, open, onOpenChange, onAppointmentBooked }: { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onAppointmentBooked: (app: Appointment) => void}) {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -45,6 +44,7 @@ function BookAppointmentDialog({ client, open, onOpenChange, onAppointmentBooked
             time,
             procedure,
             status: 'scheduled',
+            clinic_id: client.clinic_id,
         };
         onAppointmentBooked(newAppointment);
         onOpenChange(false);
@@ -313,174 +313,218 @@ function ClientProfileDialog({ client, open, onOpenChange, onClientUpdate, onBoo
   )
 }
 
-export default function ClientsPage() {
-  const [clients, setClients] = useState(initialClients);
-  const [allAppointments, setAllAppointments] = useState(appointments);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
-  const [isBookAppointmentDialogOpen, setIsBookAppointmentDialogOpen] = useState(false);
-  
-  const [newClient, setNewClient] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    address: ""
-  });
-  
-  const sortedClients = useMemo(() => {
-    return [...clients].sort((a, b) => new Date(b.last_visit).getTime() - new Date(a.last_visit).getTime());
-  }, [clients]);
+function ClientsTabContent({ clinic }: { clinic: Clinic }) {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+    const [isBookAppointmentDialogOpen, setIsBookAppointmentDialogOpen] = useState(false);
+    
+    const [newClient, setNewClient] = useState({
+        first_name: "", last_name: "", email: "", phone: "", address: ""
+    });
 
-  const handleInputChange = (field: string, value: string) => {
-    setNewClient(prev => ({ ...prev, [field]: value }));
-  };
+    useEffect(() => {
+        setClients(getClients(clinic.clinic_id));
+        setAppointments(getAppointments(clinic.clinic_id));
+    }, [clinic]);
 
-  const handleSaveClient = () => {
-    const newIdNumber = (clients.length > 0 ? Math.max(...clients.map(c => parseInt(c.client_id.replace('CLI', '')))) : 0) + 1;
-    const clientToAdd: Client = {
-      client_id: `CLI${String(newIdNumber).padStart(3, '0')}`,
-      first_name: newClient.first_name,
-      last_name: newClient.last_name,
-      contact_info: {
-        email: newClient.email,
-        phone: newClient.phone,
-        address: newClient.address,
-      },
-      last_visit: new Date().toISOString().split('T')[0], // Today's date
-      treatment_history: [],
-      payment_details: [],
+    const sortedClients = useMemo(() => {
+        return [...clients].sort((a, b) => new Date(b.last_visit).getTime() - new Date(a.last_visit).getTime());
+    }, [clients]);
+
+    const handleInputChange = (field: string, value: string) => {
+        setNewClient(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSaveClient = () => {
+        const totalClients = getClients().length;
+        const newIdNumber = totalClients + 1;
+        const clientToAdd: Client = {
+            client_id: `CLI${String(newIdNumber).padStart(3, '0')}`,
+            first_name: newClient.first_name,
+            last_name: newClient.last_name,
+            contact_info: {
+                email: newClient.email,
+                phone: newClient.phone,
+                address: newClient.address,
+            },
+            last_visit: new Date().toISOString().split('T')[0],
+            treatment_history: [],
+            payment_details: [],
+            clinic_id: clinic.clinic_id,
+        };
+        const updatedClients = addClient(clientToAdd);
+        setClients(updatedClients);
+        setIsAddClientDialogOpen(false);
+        setNewClient({ first_name: "", last_name: "", email: "", phone: "", address: "" });
     };
     
-    const updatedClients = addClient(clientToAdd);
-    setClients(updatedClients);
+    const handleClientUpdate = (updatedClientData: Client) => {
+        const updatedClients = updateClient(updatedClientData);
+        setClients(updatedClients);
+    };
     
-    setIsAddClientDialogOpen(false);
-    setNewClient({ first_name: "", last_name: "", email: "", phone: "", address: "" });
-  };
-  
-  const handleClientUpdate = (updatedClientData: Client) => {
-    const updatedClients = updateClient(updatedClientData);
-    setClients(updatedClients);
-  };
-  
-  const handleAppointmentBooked = (newAppointment: Appointment) => {
-    const updatedAppointments = addAppointment(newAppointment);
-    setAllAppointments(updatedAppointments);
-  };
+    const handleAppointmentBooked = (newAppointment: Appointment) => {
+        const updatedAppointments = addAppointment(newAppointment);
+        setAppointments(updatedAppointments);
+    };
 
-  const handleViewProfile = (client: Client) => {
-    setSelectedClient(client);
-  };
+    const handleViewProfile = (client: Client) => {
+        setSelectedClient(client);
+    };
 
-  return (
-    <DashboardLayout>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold md:text-2xl">إدارة العملاء</h1>
-          <p className="text-muted-foreground">عرض وإدارة ملفات العملاء.</p>
-        </div>
-        <Button onClick={() => setIsAddClientDialogOpen(true)}>
-          <PlusCircle className="ml-2 h-4 w-4" />
-          إضافة عميل
-        </Button>
-      </div>
+    return (
+        <div className="mt-4">
+            <div className="flex items-center justify-end mb-4">
+                <Button onClick={() => setIsAddClientDialogOpen(true)}>
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    إضافة عميل
+                </Button>
+            </div>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>الاسم</TableHead>
+                                <TableHead className="hidden md:table-cell">البريد الإلكتروني</TableHead>
+                                <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                                <TableHead>آخر زيارة</TableHead>
+                                <TableHead><span className="sr-only">الإجراءات</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedClients.map((client) => (
+                                <TableRow key={client.client_id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewProfile(client)}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage src={`https://placehold.co/100x100.png?text=${client.first_name[0]}${client.last_name[0]}`} alt={`${client.first_name} ${client.last_name}`} data-ai-hint="person portrait"/>
+                                                <AvatarFallback>{client.first_name[0]}{client.last_name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            {client.first_name} {client.last_name}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">{client.contact_info.email}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{client.contact_info.phone}</TableCell>
+                                    <TableCell>{client.last_visit}</TableCell>
+                                    <TableCell>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleViewProfile(client) }}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">فتح القائمة</span>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>الاسم</TableHead>
-                <TableHead className="hidden md:table-cell">البريد الإلكتروني</TableHead>
-                <TableHead className="hidden md:table-cell">الهاتف</TableHead>
-                <TableHead>آخر زيارة</TableHead>
-                <TableHead><span className="sr-only">الإجراءات</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedClients.map((client) => (
-                <TableRow key={client.client_id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewProfile(client)}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={`https://placehold.co/100x100.png?text=${client.first_name[0]}${client.last_name[0]}`} alt={`${client.first_name} ${client.last_name}`} data-ai-hint="person portrait"/>
-                        <AvatarFallback>{client.first_name[0]}{client.last_name[0]}</AvatarFallback>
-                      </Avatar>
-                      {client.first_name} {client.last_name}
+            <ClientProfileDialog 
+                client={selectedClient} 
+                open={!!selectedClient} 
+                onOpenChange={(open) => { if (!open) setSelectedClient(null) }} 
+                onClientUpdate={handleClientUpdate}
+                onBookAppointment={() => {
+                    if (selectedClient) {
+                        setIsBookAppointmentDialogOpen(true);
+                    }
+                }}
+            />
+
+            <BookAppointmentDialog
+                client={selectedClient}
+                open={isBookAppointmentDialogOpen}
+                onOpenChange={setIsBookAppointmentDialogOpen}
+                onAppointmentBooked={handleAppointmentBooked}
+            />
+
+            <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>إضافة عميل جديد</DialogTitle>
+                        <DialogDescription>
+                            املأ التفاصيل أدناه لإضافة عميل جديد.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="first-name" className="text-right">الاسم الأول</Label>
+                            <Input id="first-name" className="col-span-3" value={newClient.first_name} onChange={(e) => handleInputChange('first_name', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="last-name" className="text-right">الاسم الأخير</Label>
+                            <Input id="last-name" className="col-span-3" value={newClient.last_name} onChange={(e) => handleInputChange('last_name', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
+                            <Input id="email" type="email" className="col-span-3" value={newClient.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="phone" className="text-right">الهاتف</Label>
+                            <Input id="phone" className="col-span-3" value={newClient.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="address" className="text-right">العنوان</Label>
+                            <Input id="address" className="col-span-3" value={newClient.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                        </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{client.contact_info.email}</TableCell>
-                  <TableCell className="hidden md:table-cell">{client.contact_info.phone}</TableCell>
-                  <TableCell>{client.last_visit}</TableCell>
-                  <TableCell>
-                    <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleViewProfile(client) }}>
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">فتح القائمة</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      <ClientProfileDialog 
-        client={selectedClient} 
-        open={!!selectedClient} 
-        onOpenChange={(open) => { if (!open) setSelectedClient(null) }} 
-        onClientUpdate={handleClientUpdate}
-        onBookAppointment={() => {
-            if (selectedClient) {
-              setIsBookAppointmentDialogOpen(true);
-            }
-        }}
-      />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddClientDialogOpen(false)}>إلغاء</Button>
+                        <Button type="submit" onClick={handleSaveClient}>حفظ العميل</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
 
-      <BookAppointmentDialog
-        client={selectedClient}
-        open={isBookAppointmentDialogOpen}
-        onOpenChange={setIsBookAppointmentDialogOpen}
-        onAppointmentBooked={handleAppointmentBooked}
-       />
 
-      <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>إضافة عميل جديد</DialogTitle>
-            <DialogDescription>
-              املأ التفاصيل أدناه لإضافة عميل جديد.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="first-name" className="text-right">الاسم الأول</Label>
-              <Input id="first-name" className="col-span-3" value={newClient.first_name} onChange={(e) => handleInputChange('first_name', e.target.value)} />
+export default function ClientsPage() {
+    const [clinics, setClinics] = useState<Clinic[]>([]);
+    const [activeClinic, setActiveClinic] = useState<string>('');
+
+    useEffect(() => {
+        const allClinics = getClinics();
+        setClinics(allClinics);
+        if (allClinics.length > 0) {
+            setActiveClinic(allClinics[0].clinic_id);
+        }
+    }, []);
+
+    if (clinics.length === 0) {
+        return (
+            <DashboardLayout>
+                <div>لا توجد عيادات. يرجى إضافة عيادة من قسم المحاسبة.</div>
+            </DashboardLayout>
+        );
+    }
+
+    return (
+        <DashboardLayout>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold md:text-2xl">إدارة العملاء</h1>
+                    <p className="text-muted-foreground">عرض وإدارة ملفات العملاء.</p>
+                </div>
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="last-name" className="text-right">الاسم الأخير</Label>
-              <Input id="last-name" className="col-span-3" value={newClient.last_name} onChange={(e) => handleInputChange('last_name', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-              <Input id="email" type="email" className="col-span-3" value={newClient.email} onChange={(e) => handleInputChange('email', e.target.value)} />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">الهاتف</Label>
-              <Input id="phone" className="col-span-3" value={newClient.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="address" className="text-right">العنوان</Label>
-              <Input id="address" className="col-span-3" value={newClient.address} onChange={(e) => handleInputChange('address', e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddClientDialogOpen(false)}>إلغاء</Button>
-            <Button type="submit" onClick={handleSaveClient}>حفظ العميل</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>
-  );
+
+            <Tabs defaultValue={activeClinic} onValueChange={setActiveClinic} className="w-full">
+                <TabsList>
+                    {clinics.map((clinic) => (
+                        <TabsTrigger key={clinic.clinic_id} value={clinic.clinic_id}>
+                            {clinic.name}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                {clinics.map((clinic) => (
+                    <TabsContent key={clinic.clinic_id} value={clinic.clinic_id}>
+                        <ClientsTabContent clinic={clinic} />
+                    </TabsContent>
+                ))}
+            </Tabs>
+        </DashboardLayout>
+    );
 }
