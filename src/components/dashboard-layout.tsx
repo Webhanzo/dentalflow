@@ -65,10 +65,12 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>حسابي</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                <User className="ml-2 h-4 w-4" />
-                <span>الملف الشخصي</span>
-              </DropdownMenuItem>
+              <Link href="/profile">
+                <DropdownMenuItem>
+                  <User className="ml-2 h-4 w-4" />
+                  <span>الملف الشخصي</span>
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <Link href="/">
                 <DropdownMenuItem>

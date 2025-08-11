@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, User, DollarSign, Calendar } from "lucide-react";
+import { LayoutDashboard, Users, User, DollarSign, Calendar, Settings } from "lucide-react";
 
 const menuItems = [
   { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const menuItems = [
   { href: "/employees", label: "الموظفون", icon: Users },
   { href: "/clients", label: "العملاء", icon: User },
   { href: "/accounting", label: "المحاسبة", icon: DollarSign },
+  { href: "/profile", label: "الملف الشخصي", icon: Settings },
 ];
 
 export function NavMenu() {
